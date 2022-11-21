@@ -3,7 +3,7 @@ void main()
   import std.file : exists, write;
   import std.conv : text;
   import core.stdc.stdlib : exit;
-  import signal : catchSignals;
+  import signal : setupSignals;
   import loop : beginLoop, waitForLoopClose;
 
   /* if (exists("/run/yotei.pid")) 
@@ -27,7 +27,7 @@ void main()
 
   write("/run/yotei.pid", text(thisProcessID())); */
 
-  catchSignals();
+  setupSignals();
   beginLoop();
 
   waitForLoopClose();
