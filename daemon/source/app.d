@@ -3,9 +3,10 @@ void main()
   import std.file : exists, write;
   import std.conv : text;
   import core.stdc.stdlib : exit;
-  import signal;
+  import signal : catchSignals;
+  import loop : beginLoop, waitForLoopClose;
 
-  if (exists("/run/yotei.pid")) 
+  /* if (exists("/run/yotei.pid")) 
   {
     import std.stdio : stderr;
     stderr.writeln("An instance of the Yotei daemon is already running. Do not try to start another.");
@@ -24,7 +25,10 @@ void main()
     return exit(2);
   }
 
-  write("/run/yotei.pid", text(thisProcessID()));
+  write("/run/yotei.pid", text(thisProcessID())); */
 
   catchSignals();
+  beginLoop();
+
+  waitForLoopClose();
 }
