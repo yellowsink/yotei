@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"Cain Atkinson"
+	],
+	"copyright": "Copyright © 2022, Cain Atkinson",
+	"description": "A light scheduler and supervisor",
+	"license": "Unlicense",
+	"name": "yoteictl"
+}

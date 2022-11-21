@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/yoteid
+yoteid.so
+yoteid.dylib
+yoteid.dll
+yoteid.a
+yoteid.lib
+yoteid-test-*
+*.exe
+*.o
+*.obj
+*.lst
