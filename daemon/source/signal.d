@@ -4,35 +4,25 @@ private void actualHandler() {
   import std.concurrency : thisTid;
   import std.stdio : writeln;
   import std.conv : text;
+  import core.stdc.stdlib : exit;
+  import std.file : remove;
 
   writeln(text(thisTid));
+  exit(0);
 }
 
 export void setupSignals()
 {
-  import std.concurrency : spawn;
+  import core.stdc.signal : signal, SIGTERM;
 
-  spawn({
-    import core.stdc.signal : signal, SIGTERM;
-    import core.stdc.stdlib : exit;
-    import std.file : remove;
+  // use the loop as a workaround for signal handlers requiring @nogc
 
-    // use the loop as a workaround for signal handlers requiring @nogc
+  extern (C) void interopHandler(int) @nogc nothrow
+  {
+    import loop : __nogc__runOnLoop;
 
-    extern (C) void interopHandler(int) @nogc nothrow
-    {
-      import loop : __nogc__runOnLoop;
+    __nogc__runOnLoop(&actualHandler);
+  }
 
-      try
-      {
-        __nogc__runOnLoop(&actualHandler);
-      }
-      catch (Exception)
-      {
-        exit(3);
-      }
-    }
-
-    signal(SIGTERM, &interopHandler);
-  });
+  signal(SIGTERM, &interopHandler);
 }

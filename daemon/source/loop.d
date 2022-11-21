@@ -1,7 +1,7 @@
 module loop;
 import std.typecons : Nullable;
 import std.concurrency : Tid;
-import std.container.array : Array;
+import safestack : SafeStack;
 
 private
 {
@@ -18,7 +18,7 @@ private
     void function() cb;
   }
 
-  auto cbs = Array!(void function())();
+  shared auto cbs = new SafeStack!(void function())();
 
   Nullable!Tid bgThreadTid = Nullable!Tid.init;
 
@@ -27,15 +27,22 @@ private
     //import core.sys.posix.unistd : sleep;
     import std.concurrency : receiveTimeout, send;
     import core.time : dur;
+    import std.concurrency : thisTid;
+
+    bgThreadTid = thisTid;
 
     bool cancelled = false;
 
     while (!cancelled)
     {
       import std.stdio : writeln;
+      import std.conv : text;
 
-      if (!cbs.empty)
+      writeln(text(cbs.length));
+
+      if (cbs.length > 0)
       {
+
         foreach (cb; cbs)
         {
           cb();
@@ -58,12 +65,17 @@ private
 
 export void beginLoop()
 {
-  import std.concurrency : thisTid, spawn;
+  import std.concurrency : thisTid;
+  import std.parallelism : taskPool, task, Task;
 
   if (!bgThreadTid.isNull)
     return;
 
-  bgThreadTid = spawn(&bgThread, thisTid);
+  auto t = task!bgThread(thisTid);
+  t.executeInNewThread();
+  taskPool.isDaemon = false;
+
+  //bgThreadTid = spawn(&bgThread, thisTid);
 
   import std.stdio : writeln;
   import std.conv : text;
@@ -112,11 +124,7 @@ export void runOnLoop(void function() cb)
 }
 
 /// this really only exists for C interop, please dont use this :/
-export void __nogc__runOnLoop(void function() cb) @nogc
+export void __nogc__runOnLoop(void function() cb) @nogc nothrow
 {
-  static const ex = new Exception("Tried to run cb on loop when it was not running");
-  if (bgThreadTid.isNull)
-    throw ex;
-
-  cbs.insertBack(cb);
+  cbs.insert(cb);
 }
