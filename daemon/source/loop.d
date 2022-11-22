@@ -2,6 +2,8 @@ module loop;
 import std.typecons : Nullable;
 import std.concurrency : Tid;
 import safestack : SafeStack;
+//import tanya.container.array : Array;
+//import std.container.array : Array;
 
 private
 {
@@ -18,7 +20,12 @@ private
     void function() cb;
   }
 
-  shared auto cbs = new SafeStack!(void function())();
+  // cbs can be added here from a nogc context
+  // this is strongly dissuaded of use if possible to use message passing
+  // due to having to wait for the timeout
+  // and an arbitrary limit of 10 per loop
+  __gshared void function()[10] nogcCbs;
+  __gshared int nogcCbCount;
 
   Nullable!Tid bgThreadTid = Nullable!Tid.init;
 
@@ -38,17 +45,16 @@ private
       import std.stdio : writeln;
       import std.conv : text;
 
-      writeln(text(cbs.length));
-
-      if (cbs.length > 0)
+      if (nogcCbCount > 0)
       {
-
-        foreach (cb; cbs)
+        writeln("uh yeah");
+        for (auto i = 0; i < nogcCbCount; nogcCbs[i] != null)
         {
-          cb();
+          nogcCbs[i]();
+          nogcCbs[i] = null;
         }
 
-        cbs.clear();
+        nogcCbCount = 0;
       }
 
       receiveTimeout(
@@ -126,5 +132,7 @@ export void runOnLoop(void function() cb)
 /// this really only exists for C interop, please dont use this :/
 export void __nogc__runOnLoop(void function() cb) @nogc nothrow
 {
-  cbs.insert(cb);
+  assert(nogcCbCount == 0);
+
+  nogcCbs[nogcCbCount] = cb;
 }
