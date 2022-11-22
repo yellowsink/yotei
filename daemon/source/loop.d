@@ -14,6 +14,11 @@ private
   {
   }
 
+  struct StartAckMessage
+  {
+    Tid tid;
+  }
+
   struct RunCbMessage
   {
     void function() cb;
@@ -31,13 +36,12 @@ private
   void bgThread(Tid parentTid)
   {
     //import core.sys.posix.unistd : sleep;
-    import std.concurrency : receiveTimeout, send;
+    import std.concurrency : receiveTimeout, send, thisTid;
     import core.time : dur;
-    import std.concurrency : thisTid;
-
-    bgThreadTid = thisTid;
 
     bool cancelled = false;
+
+    send(parentTid, StartAckMessage(thisTid));
 
     while (!cancelled)
     {
@@ -62,14 +66,12 @@ private
         (RunCbMessage m) { m.cb(); }
       );
     }
-
-    bgThreadTid.nullify();
   }
 }
 
 export void beginLoop()
 {
-  import std.concurrency : thisTid;
+  import std.concurrency : thisTid, receive;
   import std.parallelism : taskPool, task, Task;
 
   if (!bgThreadTid.isNull)
@@ -79,12 +81,11 @@ export void beginLoop()
   t.executeInNewThread();
   taskPool.isDaemon = false;
 
-  //bgThreadTid = spawn(&bgThread, thisTid);
-
-  import std.stdio : writeln;
-  import std.conv : text;
-
-  writeln("main thread: ", text(thisTid));
+  receive(
+    (StartAckMessage m) {
+      bgThreadTid = m.tid;
+    }
+  );
 }
 
 export void killLoop()
@@ -95,26 +96,17 @@ export void killLoop()
     throw new Exception("Tried to kill loop when it was not running");
 
   send(bgThreadTid.get(), KillMessage());
+  waitForLoopClose();
+  bgThreadTid.nullify();
 }
 
 export void waitForLoopClose()
 {
-  import std.concurrency : receive, OwnerTerminated, yield;
+  import std.concurrency : receive;
 
-  try
-  {
-    auto done = false;
-    while (!done)
-    {
-      receive(
-        (KillAckMessage _) { done = true; }
-      );
-    }
-
-  }
-  catch (OwnerTerminated)
-  {
-  }
+  receive(
+    (KillAckMessage _) {}
+  );
 }
 
 export void runOnLoop(void function() cb)

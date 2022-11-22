@@ -1,10 +1,12 @@
 void main()
 {
-  import std.file : exists, write;
+  import std.file : exists, write, chdir;
   import std.conv : text;
   import core.stdc.stdlib : exit;
   import signal : setupSignals;
-  import loop : beginLoop, waitForLoopClose;
+  import loop : beginLoop, killLoop;
+
+  chdir("/");
 
   /* if (exists("/run/yotei.pid")) 
   {
