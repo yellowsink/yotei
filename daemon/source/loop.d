@@ -1,7 +1,6 @@
 module loop;
 import std.typecons : Nullable;
 import std.concurrency : Tid;
-import safestack : SafeStack;
 //import tanya.container.array : Array;
 //import std.container.array : Array;
 
@@ -47,7 +46,6 @@ private
 
       if (nogcCbCount > 0)
       {
-        writeln("uh yeah");
         for (auto i = 0; i < nogcCbCount; nogcCbs[i] != null)
         {
           nogcCbs[i]();
@@ -58,7 +56,7 @@ private
       }
 
       receiveTimeout(
-        dur!"seconds"(3),
+        dur!"seconds"(1),
         (KillMessage _) { cancelled = true; send(parentTid, KillAckMessage()); },
 
         (RunCbMessage m) { m.cb(); }
@@ -86,7 +84,7 @@ export void beginLoop()
   import std.stdio : writeln;
   import std.conv : text;
 
-  writeln(text(thisTid));
+  writeln("main thread: ", text(thisTid));
 }
 
 export void killLoop()
@@ -132,7 +130,9 @@ export void runOnLoop(void function() cb)
 /// this really only exists for C interop, please dont use this :/
 export void __nogc__runOnLoop(void function() cb) @nogc nothrow
 {
-  assert(nogcCbCount == 0);
+  // lol I should probably handle this
+  assert(nogcCbCount < 10, "Only 10 nogc loop cbs can be queued at once.");
 
   nogcCbs[nogcCbCount] = cb;
+  nogcCbCount++;
 }

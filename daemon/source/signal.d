@@ -7,7 +7,7 @@ private void actualHandler() {
   import core.stdc.stdlib : exit;
   import std.file : remove;
 
-  writeln(text(thisTid));
+  writeln("handler is running on thread ", text(thisTid), ", intercepted SIGTERM");
   exit(0);
 }
 
@@ -15,8 +15,7 @@ export void setupSignals()
 {
   import core.stdc.signal : signal, SIGTERM;
 
-  // use the loop as a workaround for signal handlers requiring @nogc
-
+  // queue this on the background loop to workaround @nogc limitations lol
   extern (C) void interopHandler(int) @nogc nothrow
   {
     import loop : __nogc__runOnLoop;
