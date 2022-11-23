@@ -18,9 +18,9 @@ export void setupSignals()
   // queue this on the background loop to workaround @nogc limitations lol
   extern (C) void interopHandler(int) @nogc nothrow
   {
-    import loop : __nogc__runOnLoop;
+    import eventloop : __nogc__queueTask;
 
-    __nogc__runOnLoop(&actualHandler);
+    __nogc__queueTask(&actualHandler);
   }
 
   signal(SIGTERM, &interopHandler);

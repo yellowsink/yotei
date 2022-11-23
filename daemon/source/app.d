@@ -4,7 +4,7 @@ void main()
   import std.conv : text;
   import core.stdc.stdlib : exit;
   import signal : setupSignals;
-  import loop : beginLoop, killLoop;
+  import eventloop : beginLoop, killLoop;
 
   chdir("/");
 

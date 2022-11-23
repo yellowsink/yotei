@@ -1,8 +1,6 @@
-module loop;
+module eventloop;
 import std.typecons : Nullable;
 import std.concurrency : Tid;
-//import tanya.container.array : Array;
-//import std.container.array : Array;
 
 private
 {
@@ -109,7 +107,7 @@ export void waitForLoopClose()
   );
 }
 
-export void runOnLoop(void function() cb)
+export void queueTask(void function() cb)
 {
   import std.concurrency : send;
 
@@ -120,7 +118,7 @@ export void runOnLoop(void function() cb)
 }
 
 /// this really only exists for C interop, please dont use this :/
-export void __nogc__runOnLoop(void function() cb) @nogc nothrow
+export void __nogc__queueTask(void function() cb) @nogc nothrow
 {
   // lol I should probably handle this
   assert(nogcCbCount < 10, "Only 10 nogc loop cbs can be queued at once.");
