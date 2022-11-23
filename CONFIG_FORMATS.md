@@ -1,4 +1,4 @@
-# Using Yotei: Configuring
+# Using Yotei: Configuring & File Formats
 
 A documentation of how to use all the file formats Yotei uses.
 
@@ -11,6 +11,7 @@ Note: `?` = optional.
 root (task[])
 
 task:
+ - id (string): a UNIQUE and optionally human-readable identifier for the task
  - run (string): a bash script to run
  - condition (string)?: if exists, runs as a bash script,
    and the run only happens if it returns a 0 exit code
@@ -78,3 +79,24 @@ task a *LOT*.
 Maybe only use this one on high uptime e.g. server environments.
 
 Always cannot be used with `on`. Doing this will make the config invalid.
+
+## `/etc/yotei/internal`
+
+You do NOT need to know about this to use Yotei.
+
+This is the file Yotei uses to store internal state in.
+
+It is a raw messagepack file with the following structure:
+```
+{
+  [task id]: {
+    // last run
+    last: timestamp
+    // first time Yotei found this task
+    // currently not needed but keeping it here in case it becomes useful
+    // created: timestamp
+  }
+}
+```
+
+If you mess with this EXPECT Yotei to break.

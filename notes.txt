@@ -1,0 +1,3 @@
+yoteictl should support an "in 5 days" as well as "every 5 days" and "on <date>".
+
+should yoteid support /tasks.d/* as well as /tasks?
