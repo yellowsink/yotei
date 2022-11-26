@@ -2,6 +2,7 @@ void main()
 {
   import std.file : exists, write, chdir;
   import std.conv : text;
+  import std.process : environment, thisProcessID;
   import core.stdc.stdlib : exit;
   import signal : setupSignals;
   import eventloop : beginLoop, killLoop;
@@ -9,7 +10,7 @@ void main()
 
   chdir("/");
 
-  /* if (exists("/run/yotei.pid")) 
+  if (exists("/run/yotei.pid"))
   {
     import std.stdio : stderr;
     stderr.writeln("An instance of the Yotei daemon is already running. Do not try to start another.");
@@ -17,9 +18,7 @@ void main()
     return exit(1);
   }
 
-  import std.process : environment, thisProcessID;
-
-  if (environment.get("EUID") != "0") 
+  if (environment.get("USER") != "root") 
   {
     import std.stdio : stderr;
 
@@ -28,8 +27,11 @@ void main()
     return exit(2);
   }
 
-  write("/run/yotei.pid", text(thisProcessID())); */
+  write("/run/yotei.pid", text(thisProcessID()));
 
   setupSignals();
   beginLoop();
+
+  import std.stdio : writeln;
+  writeln(loadTasks()[0].at);
 }

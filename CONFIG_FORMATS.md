@@ -16,10 +16,10 @@ task:
  - condition (string)?: if exists, runs as a bash script,
    and the run only happens if it returns a 0 exit code
  - every (interval)?: how often to run the task
- - on (date)?: when to run a task
+ - once (date)?: when to run a task
  - at (time)?: an offset from when the task would otherwise run.
    Cannot be more than the interval size if using `every`,
-   or one day if using `on`
+   or one day if using `once`
  - scheduleRule (srule)?: How to handle a task that was due to run but wasnt.
 
 ### Intervals (`every`)
@@ -47,12 +47,12 @@ There is a minimum of 3 seconds on intervals for performance reasons.
 </p>
 </details>
 
-### `on` and `every`
+### `once` and `every`
 **Only one** of these two can be supplied at once, else the tasks file is invalid.
 
 If `every` is supplied, the job will run whenever the interval specifies.
 
-If `on` is supplied, the task will run on that day (at the specified offset if given)
+If `once` is supplied, the task will run on that day (at the specified offset if given)
 and then Yotei will make sure it does not run again.
 
 ### Schedule rules (`scheduleRule`)
@@ -78,7 +78,7 @@ task a *LOT*.
 
 Maybe only use this one on high uptime e.g. server environments.
 
-Always cannot be used with `on`. Doing this will make the config invalid.
+Always cannot be used with `once`. Doing this will make the config invalid.
 
 ## `/etc/yotei/internal`
 
