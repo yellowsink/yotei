@@ -11,7 +11,7 @@ private void actualHandler() {
   exit(0);
 }
 
-export void setupSignals()
+void setupSignals()
 {
   import core.stdc.signal : signal, SIGTERM;
 

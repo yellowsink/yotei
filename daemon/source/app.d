@@ -5,6 +5,7 @@ void main()
   import core.stdc.stdlib : exit;
   import signal : setupSignals;
   import eventloop : beginLoop, killLoop;
+  import tasks;
 
   chdir("/");
 

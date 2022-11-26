@@ -67,7 +67,7 @@ private
   }
 }
 
-export void beginLoop()
+void beginLoop()
 {
   import std.concurrency : thisTid, receive;
   import std.parallelism : taskPool, task, Task;
@@ -86,7 +86,7 @@ export void beginLoop()
   );
 }
 
-export void killLoop()
+void killLoop()
 {
   import std.concurrency : send;
 
@@ -98,7 +98,7 @@ export void killLoop()
   bgThreadTid.nullify();
 }
 
-export void waitForLoopClose()
+void waitForLoopClose()
 {
   import std.concurrency : receive;
 
@@ -107,7 +107,7 @@ export void waitForLoopClose()
   );
 }
 
-export void queueTask(void function() cb)
+void queueTask(void function() cb)
 {
   import std.concurrency : send;
 
@@ -118,7 +118,7 @@ export void queueTask(void function() cb)
 }
 
 /// this really only exists for C interop, please dont use this :/
-export void __nogc__queueTask(void function() cb) @nogc nothrow
+void __nogc__queueTask(void function() cb) @nogc nothrow
 {
   // lol I should probably handle this
   assert(nogcCbCount < 10, "Only 10 nogc loop cbs can be queued at once.");

@@ -18,8 +18,8 @@ task:
  - every (interval)?: how often to run the task
  - on (date)?: when to run a task
  - at (time)?: an offset from when the task would otherwise run.
-  Cannot be more than the interval size if using `every`,
-  or one day if using `on`
+   Cannot be more than the interval size if using `every`,
+   or one day if using `on`
  - scheduleRule (srule)?: How to handle a task that was due to run but wasnt.
 
 ### Intervals (`every`)
