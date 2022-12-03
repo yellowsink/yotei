@@ -31,7 +31,4 @@ void main()
 
   setupSignals();
   beginLoop();
-
-  import std.stdio : writeln;
-  writeln(loadTasks()[0].at);
 }
