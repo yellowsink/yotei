@@ -21,6 +21,7 @@ task:
    Cannot be more than the interval size if using `every`,
    or one day if using `once`
  - scheduleRule (srule)?: How to handle a task that was due to run but wasnt.
+ - as (string): the user to run the script as.
 
 ### Intervals (`every`)
 

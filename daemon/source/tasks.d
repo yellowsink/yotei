@@ -74,6 +74,7 @@ struct Task
 
   string id;
   string run;
+  string as;
   ScheuleRule scheduleRule;
   Nullable!string condition;
   Nullable!Duration every;
@@ -85,6 +86,7 @@ struct Task
   {
     id = node["id"].as!string;
     run = node["run"].as!string;
+    as = node["as"].as!string;
 
     if ("scheduleRule" in node)
       scheduleRule = parseScheduleRule(node["scheduleRule"].as!string);
