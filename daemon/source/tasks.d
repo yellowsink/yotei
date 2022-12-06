@@ -73,6 +73,7 @@ struct Task
       node.removeAt("condition");
     
     //if ()
+    // TODO
 
     return node;
   }
@@ -186,23 +187,38 @@ private
     }
   }
 
-  Task[] loadTasks()
+  void loadTasks()
   {
     import std.file : exists;
     import dyaml : Loader;
     import std.algorithm : map;
 
-    if (!exists("/etc/yotei/tasks"))
-      return [];
+    if (!exists("/etc/yotei/tasks")) return;
 
     auto root = Loader.fromFile("/etc/yotei/tasks").load();
 
-    auto tasks = new Task[0];
-
     foreach (Task task; root)
-      tasks ~= task;
+      currentTasks[task.id] = task;
+  }
 
-    return tasks;
+  void saveTasks()
+  {
+    import std.file : exists, write;
+    import std.array : Appender;
+    import dyaml : dumper, Node;
+
+    if (!exists("/etc/yotei/tasks"))
+      return;
+    
+    Node[] taskList = [];
+    foreach (task; currentTasks.byValue)
+      taskList ~= task.toYaml;
+
+    Appender!string output;
+
+    dumper().dump(output, taskList);
+
+    write("/etc/yotei/tasks", output[]);
   }
 
   TaskInternals loadInternals(string id)
@@ -218,4 +234,6 @@ private
     target.id = id;
     return target;
   }
+
+  Task[string] currentTasks;
 }
