@@ -5,7 +5,7 @@ void main()
 	import std.process : environment, thisProcessID;
 	import core.stdc.stdlib : exit;
 	import signal : setupSignals;
-	import eventloop : beginLoop;
+	import eventloop : beginLoop, queueTask;
 
 	chdir("/");
 
@@ -32,4 +32,8 @@ void main()
 
 	setupSignals();
 	beginLoop();
+	queueTask({
+		import tasks : loadTasks;
+		loadTasks();
+	});
 }

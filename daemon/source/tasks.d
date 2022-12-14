@@ -223,61 +223,66 @@ private
 		}
 	}
 
-	void loadTasks()
-	{
-		import std.file : exists;
-		import dyaml : Loader;
-		import std.algorithm : map;
-
-		if (!exists("/etc/yotei/tasks"))
-			return;
-
-		auto root = Loader.fromFile("/etc/yotei/tasks").load();
-
-		foreach (Task task; root)
-			currentTasks[task.id] = task;
-	}
-
-	void saveTasks()
-	{
-		import std.file : exists, write;
-		import std.array : Appender;
-		import dyaml : dumper, Node;
-
-		if (!exists("/etc/yotei/tasks"))
-			return;
-
-		Node[] taskList = [];
-		foreach (task; currentTasks.byValue)
-			taskList ~= task.toYaml;
-
-		Appender!string output;
-
-		dumper().dump(output, taskList);
-
-		write("/etc/yotei/tasks", output[]);
-	}
-
-	TaskInternals loadInternals(string id)
+	void loadInternals()
 	{
 		import std.file : read;
 		import msgpack : unpack;
 
 		auto raw = cast(ubyte[]) read("/etc/yotei/internal");
 
-		auto internals = raw.unpack!(TaskInternals[string]);
+		currentTaskInternals = raw.unpack!(TaskInternals[string]);
+	}
 
-		auto target = internals[id];
-		target.id = id;
-		return target;
+	void saveInternals()
+	{
+		import std.file : write;
+		import msgpack : pack;
+
+		write("/etc/yotei/internal", currentTaskInternals.pack());
 	}
 
 	Task[string] currentTasks;
+
+	TaskInternals[string] currentTaskInternals;
 }
 
-void connectToLoop()
+void loadTasks(bool andInternals = true)
 {
-	import eventloop : queueTask, queueTimer;
+	import std.file : exists;
+	import dyaml : Loader;
+	import std.algorithm : map;
 
-	
+	if (!exists("/etc/yotei/tasks"))
+		return;
+
+	auto root = Loader.fromFile("/etc/yotei/tasks").load();
+
+	foreach (Task task; root)
+		currentTasks[task.id] = task;
+
+	if (andInternals)
+		loadInternals();
+}
+
+void saveTasks(bool andInternals = true)
+{
+	import std.file : exists, write;
+	import std.array : Appender;
+	import dyaml : dumper, Node;
+
+	if (!exists("/etc/yotei/tasks"))
+		return;
+
+	Node[] taskList = [];
+	foreach (task; currentTasks.byValue)
+		taskList ~= task.toYaml;
+
+	Appender!string output;
+
+	dumper().dump(output, taskList);
+
+	write("/etc/yotei/tasks", output[]);
+
+	if (andInternals)
+		saveInternals();
 }

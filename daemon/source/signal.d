@@ -4,7 +4,9 @@ private void actualHandler()
 {
 	import core.stdc.stdlib : exit;
 	import std.file : remove;
+	import tasks : saveTasks;
 
+	saveTasks();
 	remove("/run/yotei.pid");
 	exit(0);
 }
