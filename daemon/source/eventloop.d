@@ -5,6 +5,13 @@ import std.datetime : SysTime;
 
 private
 {
+	int lastId;
+
+	int genId()
+	{
+		return lastId++;
+	}
+
 	struct KillMessage
 	{
 	}
@@ -27,7 +34,7 @@ private
 	{
 		void function() cb;
 		SysTime at;
-		string id;
+		int id;
 
 		@property bool isReady()
 		{
@@ -39,7 +46,7 @@ private
 
 	struct RemoveTimerMessage
 	{
-		string id;
+		int id;
 	}
 
 	// cbs can be added here from a nogc context
@@ -54,7 +61,6 @@ private
 
 	void bgThread(Tid parentTid)
 	{
-		//import core.sys.posix.unistd : sleep;
 		import std.concurrency : receiveTimeout, send, thisTid;
 		import core.time : dur;
 
@@ -170,17 +176,21 @@ void __nogc__queueTask(void function() cb) @nogc nothrow
 	nogcCbCount++;
 }
 
-void queueTimer(void function() cb, SysTime time, string id)
+int queueTimer(void function() cb, SysTime time)
 {
 	import std.concurrency : send;
 
 	if (bgThreadTid.isNull)
 		throw new Exception("Tried to queue timer on loop when it was not running");
 
+	auto id = genId();
+
 	send(bgThreadTid.get(), QueueTimerMessage(cb, time, id));
+
+	return id;
 }
 
-void dequeueTimer(string id)
+void dequeueTimer(int id)
 {
 	import std.concurrency : send;
 
