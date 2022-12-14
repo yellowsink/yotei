@@ -1,25 +1,26 @@
 module signal;
 
-private void actualHandler() {
-  import core.stdc.stdlib : exit;
-  import std.file : remove;
+private void actualHandler()
+{
+	import core.stdc.stdlib : exit;
+	import std.file : remove;
 
-  remove("/run/yotei.pid");
-  exit(0);
+	remove("/run/yotei.pid");
+	exit(0);
 }
 
 void setupSignals()
 {
-  import core.stdc.signal : signal, SIGTERM, SIGINT;
+	import core.stdc.signal : signal, SIGTERM, SIGINT;
 
-  // queue this on the background loop to workaround @nogc limitations lol
-  extern (C) void interopHandler(int) @nogc nothrow
-  {
-    import eventloop : __nogc__queueTask;
+	// queue this on the background loop to workaround @nogc limitations lol
+	extern (C) void interopHandler(int) @nogc nothrow
+	{
+		import eventloop : __nogc__queueTask;
 
-    __nogc__queueTask(&actualHandler);
-  }
+		__nogc__queueTask(&actualHandler);
+	}
 
-  signal(SIGTERM, &interopHandler);
-  signal(SIGINT, &interopHandler);
+	signal(SIGTERM, &interopHandler);
+	signal(SIGINT, &interopHandler);
 }

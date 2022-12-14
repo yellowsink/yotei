@@ -1,33 +1,35 @@
 void main()
 {
-  import std.file : exists, write, chdir;
-  import std.conv : text;
-  import std.process : environment, thisProcessID;
-  import core.stdc.stdlib : exit;
-  import signal : setupSignals;
-  import eventloop : beginLoop;
+	import std.file : exists, write, chdir;
+	import std.conv : text;
+	import std.process : environment, thisProcessID;
+	import core.stdc.stdlib : exit;
+	import signal : setupSignals;
+	import eventloop : beginLoop;
 
-  chdir("/");
+	chdir("/");
 
-  if (exists("/run/yotei.pid"))
-  {
-    import std.stdio : stderr;
-    stderr.writeln("An instance of the Yotei daemon is already running. Do not try to start another.");
+	if (exists("/run/yotei.pid"))
+	{
+		import std.stdio : stderr;
 
-    return exit(1);
-  }
+		stderr.writeln(
+			"An instance of the Yotei daemon is already running. Do not try to start another.");
 
-  if (environment.get("USER") != "root") 
-  {
-    import std.stdio : stderr;
+		return exit(1);
+	}
 
-    stderr.writeln("The Yotei daemon should be started as root.");
+	if (environment.get("USER") != "root")
+	{
+		import std.stdio : stderr;
 
-    return exit(2);
-  }
+		stderr.writeln("The Yotei daemon should be started as root.");
 
-  write("/run/yotei.pid", text(thisProcessID()));
+		return exit(2);
+	}
 
-  setupSignals();
-  beginLoop();
+	write("/run/yotei.pid", text(thisProcessID()));
+
+	setupSignals();
+	beginLoop();
 }
