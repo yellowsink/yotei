@@ -274,3 +274,10 @@ private
 
 	Task[string] currentTasks;
 }
+
+void connectToLoop()
+{
+	import eventloop : queueTask, queueTimer;
+
+	
+}

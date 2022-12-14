@@ -46,7 +46,8 @@ private
 	// this is strongly dissuaded of use if possible to use message passing
 	// due to having to wait for the timeout
 	// and an arbitrary limit of 10 per loop
-	__gshared void function()[10] nogcCbs;
+	immutable int nogcCbLimit = 10;
+	__gshared void function()[nogcCbLimit] nogcCbs;
 	__gshared int nogcCbCount;
 
 	Nullable!Tid bgThreadTid = Nullable!Tid.init;
@@ -163,7 +164,7 @@ void queueTask(void function() cb)
 void __nogc__queueTask(void function() cb) @nogc nothrow
 {
 	// lol I should probably handle this
-	assert(nogcCbCount < 10, "Only 10 nogc loop cbs can be queued at once.");
+	assert(nogcCbCount < nogcCbLimit, "Only 10 nogc loop cbs can be queued at once.");
 
 	nogcCbs[nogcCbCount] = cb;
 	nogcCbCount++;
