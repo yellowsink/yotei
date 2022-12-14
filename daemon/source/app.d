@@ -5,8 +5,7 @@ void main()
   import std.process : environment, thisProcessID;
   import core.stdc.stdlib : exit;
   import signal : setupSignals;
-  import eventloop : beginLoop, killLoop;
-  import tasks;
+  import eventloop : beginLoop;
 
   chdir("/");
 

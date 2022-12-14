@@ -59,9 +59,10 @@ struct Task
   Node toYaml() @safe
   {
     Node node = yamlRepresentation.get(Node(new Node.Pair[0]));
-    
+
     node["id"] = id;
     node["run"] = run;
+    node["as"] = as;
 
     // schedule rule might have been left as default!
     if (!("scheduleRule" in node) || scheduleRule != ScheuleRule.single)
@@ -71,9 +72,44 @@ struct Task
       node["condition"] = condition.get();
     else if ("condition" in node)
       node.removeAt("condition");
+
+    if (!every.isNull)
+    {
+      if (yamlRepresentation.isNull
+        || !("every" in yamlRepresentation.get)
+        || resolveInterval(yamlRepresentation.get["every"].as!string) != every
+        )
+        node["every"] = every.get
+          .total!"seconds"
+          .to!string ~ " seconds";
+      
+      if ("once" in node)
+        node.removeAt("once");
+    }
+    else if (once.isNull)
+      throw new Exception("Cannot emit a task with neither `every` nor `once` keys");
+    else
+    {
+      // unlike `every`, there's no reason to only update if needed
+      // there, keeping the user's formatting of their interval is preferable
+      // but here, its ISO all the time so its ok
+      node["once"] = once.get.toISOExtString();
+      if ("every" in node)
+        node.removeAt("every");
+    }
+
+    if (!at.isNull)  
+    {
+      auto mins = at.get.total!"minutes";
+      auto secs = (at.get - dur!"minutes"(mins)).total!"seconds";
+
+      node["at"] = mins.to!string ~ ":" ~ secs.to!string;
+    }
+    else if ("at" in node)
+      node.removeAt("at");
     
-    //if ()
-    // TODO
+    // keep this up to date!
+    yamlRepresentation = node;
 
     return node;
   }
@@ -193,7 +229,8 @@ private
     import dyaml : Loader;
     import std.algorithm : map;
 
-    if (!exists("/etc/yotei/tasks")) return;
+    if (!exists("/etc/yotei/tasks"))
+      return;
 
     auto root = Loader.fromFile("/etc/yotei/tasks").load();
 
@@ -209,7 +246,7 @@ private
 
     if (!exists("/etc/yotei/tasks"))
       return;
-    
+
     Node[] taskList = [];
     foreach (task; currentTasks.byValue)
       taskList ~= task.toYaml;
