@@ -11,6 +11,12 @@ bool checkCondition(string condition, string as)
 	return res.status == 0;
 }
 
+void runTask(string task, string as)
+{
+	// goofy
+	_ = checkCondition(task, as);
+}
+
 // TODO: oh god the actual runner needs to be quite robust, huh?
 // TODO: hmmm tie it all together with tasks n stuff too
 // TODO: socket :D
