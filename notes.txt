@@ -1,3 +1,5 @@
 yoteictl should support an "in 5 days" as well as "every 5 days" and "on <date>".
 
 should yoteid support /tasks.d/* as well as /tasks?
+
+yoteictl should only let you make tasks that run as yourself without root permissions (shell out to sudo!)
