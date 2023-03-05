@@ -1,4 +1,4 @@
 0: graceful exit
 1: yotei is already running
-2: yotei is not root
+2: <unused>
 3: failed to register SIGTERM handler
