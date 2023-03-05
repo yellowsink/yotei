@@ -197,14 +197,14 @@ private
 
 		static void serialize(ref Packer p, ref in SysTime tim)
 		{
-			p.pack(tim.toISOExtString());
+			p.pack(tim.toUnixTime());
 		}
 
 		static void deserialize(ref Unpacker u, ref SysTime tim)
 		{
-			string tmp;
+			long* tmp;
 			u.unpack(tmp);
-			tim = SysTime.fromISOExtString(tmp);
+			tim = SysTime.fromUnixTime(*tmp);
 		}
 	}
 
@@ -225,8 +225,11 @@ private
 
 	void loadInternals()
 	{
-		import std.file : read;
+		import std.file : read, exists;
 		import msgpack : unpack;
+
+		if (!exists("/etc/yotei/internal"))
+			return;
 
 		auto raw = cast(ubyte[]) read("/etc/yotei/internal");
 
@@ -237,6 +240,11 @@ private
 	{
 		import std.file : write;
 		import msgpack : pack;
+
+		// TODO: debug
+		import std.stdio : writeln;
+		writeln(currentTaskInternals);
+		writeln(currentTaskInternals.pack());
 
 		write("/etc/yotei/internal", currentTaskInternals.pack());
 	}
@@ -250,18 +258,30 @@ void loadTasks(bool andInternals = true)
 {
 	import std.file : exists;
 	import dyaml : Loader;
+	import dyaml.exception : YAMLException;
 	import std.algorithm : map;
 
 	if (!exists("/etc/yotei/tasks"))
 		return;
 
-	auto root = Loader.fromFile("/etc/yotei/tasks").load();
+	try {
+		auto root = Loader.fromFile("/etc/yotei/tasks").load();
 
-	foreach (Task task; root)
-		currentTasks[task.id] = task;
+		foreach (Task task; root)
+			currentTasks[task.id] = task;
+
+	} catch (YAMLException y) {
+		import std.stdio : writeln;
+		writeln("Loading tasks file as yaml threw");
+		return;
+	}
 
 	if (andInternals)
 		loadInternals();
+
+	foreach (task; currentTasks.byKey)
+		if (!(task in currentTaskInternals))
+			currentTaskInternals[task] = TaskInternals(SysTime.fromUnixTime(0));
 }
 
 void saveTasks(bool andInternals = true)
@@ -269,9 +289,6 @@ void saveTasks(bool andInternals = true)
 	import std.file : exists, write;
 	import std.array : Appender;
 	import dyaml : dumper, Node;
-
-	if (!exists("/etc/yotei/tasks"))
-		return;
 
 	Node[] taskList = [];
 	foreach (task; currentTasks.byValue)

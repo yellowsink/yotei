@@ -23,9 +23,7 @@ void main()
 	{
 		import std.stdio : stderr;
 
-		stderr.writeln("The Yotei daemon should be started as root.");
-
-		return exit(2);
+		stderr.writeln("The Yotei daemon should be started as root, Yotei *may* crash with a permission error.");
 	}
 
 	write("/run/yotei.pid", text(thisProcessID()));
