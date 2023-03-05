@@ -100,19 +100,19 @@ private
 			}
 
 			receiveTimeout(
-				dur!"seconds"(1),
+				dur!"msecs"(100),
 				(KillMessage _) { cancelled = true; send(parentTid, KillAckMessage()); },
 
 				(RunCbMessage m) { m.cb(); },
 				(QueueTimerMessage m) { pendingTimers ~= m; },
 				(RemoveTimerMessage m) {
-				QueueTimerMessage[] remaining = [];
-				foreach (timer; pendingTimers)
-					if (timer.id != m.id)
-						remaining ~= timer;
+					QueueTimerMessage[] remaining = [];
+					foreach (timer; pendingTimers)
+						if (timer.id != m.id)
+							remaining ~= timer;
 
-				pendingTimers = remaining;
-			}
+					pendingTimers = remaining;
+				}
 			);
 		}
 	}

@@ -14,7 +14,7 @@ bool checkCondition(string condition, string as)
 void runTask(string task, string as)
 {
 	// goofy
-	_ = checkCondition(task, as);
+	auto _ = checkCondition(task, as);
 }
 
 // TODO: oh god the actual runner needs to be quite robust, huh?
