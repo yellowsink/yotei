@@ -233,6 +233,7 @@ private
 
 		auto raw = cast(ubyte[]) read("/etc/yotei/internal");
 
+		// TODO: this call hangs the entire process
 		currentTaskInternals = raw.unpack!(TaskInternals[string]);
 	}
 
