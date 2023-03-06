@@ -14,7 +14,8 @@ void main()
 		import std.stdio : stderr;
 
 		stderr.writeln(
-			"An instance of the Yotei daemon is already running. Do not try to start another.");
+			"An instance of the Yotei daemon appears to already be running. Do not try to start another.
+(if you are SURE that the Yotei daemon is not running (try pgrep yoteid), then delete /run/yotei.pid)");
 
 		return exit(1);
 	}
@@ -30,6 +31,7 @@ void main()
 
 	setupSignals();
 	beginLoop();
+	// tasks are stored on the loop's thread
 	queueTask({
 		import tasks : loadTasks;
 		loadTasks();

@@ -1,5 +1,6 @@
 module signal;
 
+// runs on event loop thread
 private void actualHandler()
 {
 	import core.stdc.stdlib : exit;
