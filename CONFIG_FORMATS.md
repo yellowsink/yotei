@@ -87,17 +87,7 @@ You do NOT need to know about this to use Yotei.
 
 This is the file Yotei uses to store internal state in.
 
-It is a raw messagepack file with the following structure:
-```
-{
-  [task id]: {
-    // last run
-    last: timestamp
-    // first time Yotei found this task
-    // currently not needed but keeping it here in case it becomes useful
-    // created: timestamp
-  }
-}
-```
+It is a raw binary file with a structure defined in the comments in `internalcoding.d`
+[here](https://github.com/yellowsink/yotei/blob/master/daemon/source/internalcoding.d#L5-L8).
 
 If you mess with this EXPECT Yotei to break.

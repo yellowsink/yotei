@@ -1,5 +1,6 @@
 module tasks;
 import std.datetime;
+import internalcoding;
 
 enum ScheuleRule
 {
@@ -191,71 +192,42 @@ private
 		}
 	}
 
-	static struct SysTimePackProxy
-	{
-		import msgpack : Packer, Unpacker;
-
-		static void serialize(ref Packer p, ref in SysTime tim)
-		{
-			p.pack(tim.toUnixTime());
-		}
-
-		static void deserialize(ref Unpacker u, ref SysTime tim)
-		{
-			long* tmp;
-			u.unpack(tmp);
-			tim = SysTime.fromUnixTime(*tmp);
-		}
-	}
-
-	struct TaskInternals
-	{
-		import msgpack : nonPacked, serializedAs;
-
-		@nonPacked string id;
-		@serializedAs!SysTimePackProxy SysTime last;
-
-		this(SysTime last)
-		{
-			import std.datetime : Clock;
-
-			this.last = last;
-		}
-	}
-
 	Task[string] currentTasks;
 
-	TaskInternals[string] currentTaskInternals;
+	InternalV1 internalData;
 }
 
 void loadInternals()
 {
 	import std.file : read, exists;
-	import msgpack : unpack;
 	import config : pathInternal;
 
 	if (!exists(pathInternal))
+	{
+		// assume yotei has never ran before if this is nulled out
+		if (internalData.magic == [0, 0, 0, 0])
+			internalData = InternalV1(0);
+
 		return;
+	}
 
 	auto raw = cast(ubyte[]) read(pathInternal);
 
-	// TODO: this call hangs the entire process
-	currentTaskInternals = raw.unpack!(TaskInternals[string]);
+	internalData = deserInternal(raw);
 }
 
 void saveInternals()
 {
 	import std.file : write;
-	import msgpack : pack;
 	import config : pathInternal;
 
 	// TODO: debug
 	import std.stdio : writeln;
 
-	writeln(currentTaskInternals);
-	writeln(currentTaskInternals.pack());
+	writeln(internalData);
+	writeln(internalData.serIternal());
 
-	write(pathInternal, currentTaskInternals.pack());
+	write(pathInternal, internalData.serIternal());
 }
 
 void loadTasks(bool andInternals = true)
@@ -266,27 +238,27 @@ void loadTasks(bool andInternals = true)
 	import std.algorithm : map;
 	import config : pathTasks;
 
-	if (!exists(pathTasks))
-		return;
+	if (exists(pathTasks))
+	{
 
-	try {
-		auto root = Loader.fromFile(pathTasks).load();
+		try
+		{
+			auto root = Loader.fromFile(pathTasks).load();
 
-		foreach (Task task; root)
-			currentTasks[task.id] = task;
+			foreach (Task task; root)
+				currentTasks[task.id] = task;
+		}
+		catch (YAMLException y)
+		{
+			import std.stdio : writeln;
 
-	} catch (YAMLException y) {
-		import std.stdio : writeln;
-		writeln("Loading tasks file as yaml threw");
-		return;
+			writeln("Loading tasks file as yaml threw");
+			return;
+		}
 	}
 
 	if (andInternals)
 		loadInternals();
-
-	foreach (task; currentTasks.byKey)
-		if (!(task in currentTaskInternals))
-			currentTaskInternals[task] = TaskInternals(SysTime.fromUnixTime(0));
 }
 
 void saveTasks(bool andInternals = true)
