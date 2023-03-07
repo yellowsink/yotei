@@ -2,3 +2,4 @@
 1: yotei is already running
 2: <unused>
 3: failed to register SIGTERM handler
+4: --user was passed but could not get home directory

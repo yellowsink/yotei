@@ -6,9 +6,10 @@ private void actualHandler()
 	import std.file : remove;
 	import tasks : saveTasks;
 	import eventloop : killLoop;
+	import config : pathPid;
 
 	//saveTasks();
-	remove("/run/yotei.pid");
+	remove(pathPid);
 	killLoop();
 }
 
@@ -16,7 +17,7 @@ void setupSignals()
 {
 	import core.stdc.signal : signal, SIGTERM, SIGINT;
 
-	// queue this on the background loop to workaround @nogc limitations lol
+	// queue this on the loop to workaround @nogc limitations lol
 	extern (C) void interopHandler(int) @nogc nothrow
 	{
 		import eventloop : __nogc__queueTask;

@@ -227,11 +227,12 @@ private
 	{
 		import std.file : read, exists;
 		import msgpack : unpack;
+		import config : pathInternal;
 
-		if (!exists("/etc/yotei/internal"))
+		if (!exists(pathInternal))
 			return;
 
-		auto raw = cast(ubyte[]) read("/etc/yotei/internal");
+		auto raw = cast(ubyte[]) read(pathInternal);
 
 		// TODO: this call hangs the entire process
 		currentTaskInternals = raw.unpack!(TaskInternals[string]);
@@ -241,13 +242,14 @@ private
 	{
 		import std.file : write;
 		import msgpack : pack;
+		import config : pathInternal;
 
 		// TODO: debug
 		import std.stdio : writeln;
 		writeln(currentTaskInternals);
 		writeln(currentTaskInternals.pack());
 
-		write("/etc/yotei/internal", currentTaskInternals.pack());
+		write(pathInternal, currentTaskInternals.pack());
 	}
 
 	Task[string] currentTasks;
@@ -261,12 +263,13 @@ void loadTasks(bool andInternals = true)
 	import dyaml : Loader;
 	import dyaml.exception : YAMLException;
 	import std.algorithm : map;
+	import config : pathTasks;
 
-	if (!exists("/etc/yotei/tasks"))
+	if (!exists(pathTasks))
 		return;
 
 	try {
-		auto root = Loader.fromFile("/etc/yotei/tasks").load();
+		auto root = Loader.fromFile(pathTasks).load();
 
 		foreach (Task task; root)
 			currentTasks[task.id] = task;
@@ -290,6 +293,7 @@ void saveTasks(bool andInternals = true)
 	import std.file : exists, write;
 	import std.array : Appender;
 	import dyaml : dumper, Node;
+	import config : pathTasks;
 
 	Node[] taskList = [];
 	foreach (task; currentTasks.byValue)
@@ -299,7 +303,7 @@ void saveTasks(bool andInternals = true)
 
 	dumper().dump(output, taskList);
 
-	write("/etc/yotei/tasks", output[]);
+	write(pathTasks, output[]);
 
 	if (andInternals)
 		saveInternals();
