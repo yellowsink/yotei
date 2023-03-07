@@ -4,11 +4,12 @@ private void actualHandler()
 {
 	import core.stdc.stdlib : exit;
 	import std.file : remove;
-	import tasks : saveTasks;
+	import tasks : saveInternals;
 	import eventloop : killLoop;
 	import config : pathPid;
 
-	//saveTasks();
+	//saveTasks(); this shouldn't be necessary?
+	saveInternals();
 	remove(pathPid);
 	killLoop();
 }

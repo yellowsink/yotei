@@ -223,38 +223,39 @@ private
 		}
 	}
 
-	void loadInternals()
-	{
-		import std.file : read, exists;
-		import msgpack : unpack;
-		import config : pathInternal;
-
-		if (!exists(pathInternal))
-			return;
-
-		auto raw = cast(ubyte[]) read(pathInternal);
-
-		// TODO: this call hangs the entire process
-		currentTaskInternals = raw.unpack!(TaskInternals[string]);
-	}
-
-	void saveInternals()
-	{
-		import std.file : write;
-		import msgpack : pack;
-		import config : pathInternal;
-
-		// TODO: debug
-		import std.stdio : writeln;
-		writeln(currentTaskInternals);
-		writeln(currentTaskInternals.pack());
-
-		write(pathInternal, currentTaskInternals.pack());
-	}
-
 	Task[string] currentTasks;
 
 	TaskInternals[string] currentTaskInternals;
+}
+
+void loadInternals()
+{
+	import std.file : read, exists;
+	import msgpack : unpack;
+	import config : pathInternal;
+
+	if (!exists(pathInternal))
+		return;
+
+	auto raw = cast(ubyte[]) read(pathInternal);
+
+	// TODO: this call hangs the entire process
+	currentTaskInternals = raw.unpack!(TaskInternals[string]);
+}
+
+void saveInternals()
+{
+	import std.file : write;
+	import msgpack : pack;
+	import config : pathInternal;
+
+	// TODO: debug
+	import std.stdio : writeln;
+
+	writeln(currentTaskInternals);
+	writeln(currentTaskInternals.pack());
+
+	write(pathInternal, currentTaskInternals.pack());
 }
 
 void loadTasks(bool andInternals = true)

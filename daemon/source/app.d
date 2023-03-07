@@ -36,7 +36,7 @@ void main(string[] argv)
 
 	setupSignals();
 
-	//loadTasks();
+	loadTasks();
 
 	// start and supervise the event loop
 	beginLoop();

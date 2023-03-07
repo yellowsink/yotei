@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build yoteid",
+			"type": "shell",
+			"command": "dub",
+			"args": ["build", "-b", "debug", "--compiler", "ldc"],
+			"options": {
+				"cwd": "${workspaceFolder}/daemon"
+			}
+		}
+	]
+}
