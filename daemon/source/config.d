@@ -28,8 +28,8 @@ void init(bool user = false)
 		}
 
 		rootDir = homeDir;
-		pathTasks = homeDir ~ ".config/yotei/tasks";
-		pathInternal = ".config/yotei/internal";
+		pathTasks = homeDir ~ "/.config/yotei/tasks";
+		pathInternal = homeDir ~ "/.config/yotei/internal";
 		pathPid = "/var/run/user/" ~ getuid().to!string ~ "/yotei.pid";
 	}
 	else {

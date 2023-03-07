@@ -32,11 +32,11 @@ InternalV1 deserInternal(ubyte[] file)
 		throw new Exception("the file is the wrong number of bytes");
 	if (file[0 .. 4] != MAGIC)
 		throw new Exception("magic bytes were incorrect for this file");
-	if (file[5] != 1)
+	if (file[4] != 1)
 		throw new Exception("invalid version number in file");
 
 	// this casting madness constructs a ulong from a byte array of relevant size
-	auto lastLoopRun = *cast(ulong*) file[6 .. 6 + ulong.sizeof].ptr;
+	auto lastLoopRun = *cast(ulong*) file[5 .. 5 + ulong.sizeof].ptr;
 
 	return InternalV1(lastLoopRun);
 }

@@ -1,7 +1,27 @@
 void main(string[] argv)
 {
+	import config : init, pathPid;
+	import std.file : remove, exists;
+
+	init(hasFlag!"user"(argv));
+
+	try {
+		dirtyMain();
+	}
+	finally {
+		if (exists(pathPid))
+			remove(pathPid);
+
+		// TODO: kill all dangling processes
+	}
+}
+
+// dirty - can throw exceptions and require cleanup (pid file)
+void dirtyMain()
+{
 	import std.file : exists, write, chdir;
 	import std.conv : text;
+	import std.stdio : stderr;
 	import std.process : thisProcessID;
 	import core.stdc.stdlib : exit;
 	import signal : setupSignals;
@@ -9,14 +29,10 @@ void main(string[] argv)
 	import tasks : loadTasks;
 	import config : init, rootDir, pathPid, expectRoot, getuid;
 
-	init(hasFlag!"user"(argv));
-
 	chdir(rootDir);
 
 	if (exists(pathPid))
 	{
-		import std.stdio : stderr;
-
 		stderr.writeln(
 			"An instance of the Yotei daemon appears to already be running. Do not try to start another.
 (if you are SURE that the Yotei daemon is not running (try pgrep yoteid), then delete ", pathPid);
@@ -26,13 +42,11 @@ void main(string[] argv)
 
 	if (getuid() != 0 && expectRoot)
 	{
-		import std.stdio : stderr;
-
 		stderr.writeln(
 			"The Yotei daemon should be started as root or with --user, Yotei *may* crash with a permission error.");
 	}
 
-	write(pathPid, text(thisProcessID()));
+	write(pathPid, thisProcessID.text);
 
 	setupSignals();
 
