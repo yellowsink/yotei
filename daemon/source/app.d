@@ -5,7 +5,8 @@ void main()
 	import std.process : environment, thisProcessID;
 	import core.stdc.stdlib : exit;
 	import signal : setupSignals;
-	import eventloop : beginLoop, queueTask;
+	import eventloop : beginLoop, waitForLoopClose;
+	import tasks : loadTasks;
 
 	chdir("/");
 
@@ -30,10 +31,10 @@ void main()
 	write("/run/yotei.pid", text(thisProcessID()));
 
 	setupSignals();
+
+	//loadTasks();
+
+	// start and supervise the event loop
 	beginLoop();
-	// tasks are stored on the loop's thread
-	queueTask({
-		import tasks : loadTasks;
-		loadTasks();
-	});
+	waitForLoopClose();
 }

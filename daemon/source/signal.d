@@ -1,15 +1,15 @@
 module signal;
 
-// runs on event loop thread
 private void actualHandler()
 {
 	import core.stdc.stdlib : exit;
 	import std.file : remove;
 	import tasks : saveTasks;
+	import eventloop : killLoop;
 
-	saveTasks();
+	//saveTasks();
 	remove("/run/yotei.pid");
-	exit(0);
+	killLoop();
 }
 
 void setupSignals()

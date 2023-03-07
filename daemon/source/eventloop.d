@@ -1,6 +1,7 @@
 module eventloop;
 import std.typecons : Nullable;
 import std.concurrency : Tid;
+import core.thread : Fiber;
 import std.datetime : SysTime;
 
 private
@@ -10,19 +11,6 @@ private
 	int genId()
 	{
 		return lastId++;
-	}
-
-	struct KillMessage
-	{
-	}
-
-	struct KillAckMessage
-	{
-	}
-
-	struct StartAckMessage
-	{
-		Tid tid;
 	}
 
 	struct RunCbMessage
@@ -44,31 +32,22 @@ private
 		}
 	}
 
-	struct RemoveTimerMessage
-	{
-		int id;
-	}
-
 	// cbs can be added here from a nogc context
 	// this is strongly dissuaded of use if possible to use message passing
 	// due to having to wait for the timeout
 	// and an arbitrary limit of 10 per loop
 	immutable int nogcCbLimit = 10;
-	__gshared void function()[nogcCbLimit] nogcCbs;
-	__gshared int nogcCbCount;
+	void function()[nogcCbLimit] nogcCbs;
+	int nogcCbCount;
 
-	Nullable!Tid bgThreadTid = Nullable!Tid.init;
+	Nullable!Fiber fiber;
+	bool cancelled = false;
+	QueueTimerMessage[] pendingTimers = [];
 
-	void bgThread(Tid parentTid)
+	void bgThread()
 	{
 		import std.concurrency : receiveTimeout, send, thisTid;
 		import core.time : dur;
-
-		bool cancelled = false;
-
-		send(parentTid, StartAckMessage(thisTid));
-
-		QueueTimerMessage[] pendingTimers = [];
 
 		while (!cancelled)
 		{
@@ -77,8 +56,10 @@ private
 
 			if (nogcCbCount > 0)
 			{
-				for (auto i = 0; i < nogcCbCount; nogcCbs[i] != null)
+				for (auto i = 0; i < nogcCbCount;)
 				{
+					if (nogcCbs[i] == null) break;
+
 					nogcCbs[i]();
 					nogcCbs[i] = null;
 				}
@@ -99,74 +80,44 @@ private
 				pendingTimers = notYet;
 			}
 
-			receiveTimeout(
-				dur!"msecs"(100),
-				(KillMessage _) { cancelled = true; send(parentTid, KillAckMessage()); },
-
-				(RunCbMessage m) { m.cb(); },
-				(QueueTimerMessage m) { pendingTimers ~= m; },
-				(RemoveTimerMessage m) {
-					QueueTimerMessage[] remaining = [];
-					foreach (timer; pendingTimers)
-						if (timer.id != m.id)
-							remaining ~= timer;
-
-					pendingTimers = remaining;
-				}
-			);
+			Fiber.yield();
 		}
+
+		cancelled = false;
+		pendingTimers = [];
 	}
 }
 
 void beginLoop()
 {
-	import std.concurrency : thisTid, receive;
-	import std.parallelism : taskPool, task, Task;
-
-	if (!bgThreadTid.isNull)
-		return;
-
-	auto t = task!bgThread(thisTid);
-	t.executeInNewThread();
-	taskPool.isDaemon = false;
-
-	receive(
-		(StartAckMessage m) { bgThreadTid = m.tid; }
-	);
+	if (fiber.isNull) {
+		fiber = new Fiber(&bgThread);
+		fiber.get.call();
+	}
 }
 
-void killLoop()
+void killLoop() @nogc nothrow
 {
-	import std.concurrency : send;
-
-	if (bgThreadTid.isNull)
-		throw new Exception("Tried to kill loop when it was not running");
-
-	send(bgThreadTid.get(), KillMessage());
-	waitForLoopClose();
-	bgThreadTid.nullify();
+	if (!fiber.isNull) cancelled = true;
 }
 
 void waitForLoopClose()
 {
-	import std.concurrency : receive;
+	if (fiber.isNull) return;
 
-	receive(
-		(KillAckMessage _) {}
-	);
+	auto f = fiber.get();
+	while (f.state() != Fiber.State.TERM) {
+		f.call();
+
+		import core.thread.osthread : Thread;
+		import std.datetime : dur;
+		Thread.sleep(dur!"msecs"(100));
+	}
 }
 
-void queueTask(void function() cb)
-{
-	import std.concurrency : send;
-
-	if (bgThreadTid.isNull)
-		throw new Exception("Tried to run cb on loop when it was not running");
-
-	send(bgThreadTid.get(), RunCbMessage(cb));
-}
-
-/// this really only exists for C interop, please dont use this :/
+/// This only exists for C interop, please dont use.
+/// The purpose of queueing a task on the loop is to schedule standard D code to run
+/// from within a @nogc nothrow (c interop) environment
 void __nogc__queueTask(void function() cb) @nogc nothrow
 {
 	// lol I should probably handle this
@@ -178,24 +129,19 @@ void __nogc__queueTask(void function() cb) @nogc nothrow
 
 int queueTimer(void function() cb, SysTime time)
 {
-	import std.concurrency : send;
-
-	if (bgThreadTid.isNull)
-		throw new Exception("Tried to queue timer on loop when it was not running");
-
 	auto id = genId();
 
-	send(bgThreadTid.get(), QueueTimerMessage(cb, time, id));
+	pendingTimers ~= QueueTimerMessage(cb, time, id);
 
 	return id;
 }
 
 void dequeueTimer(int id)
 {
-	import std.concurrency : send;
+	QueueTimerMessage[] remaining = [];
+	foreach (timer; pendingTimers)
+		if (timer.id != id)
+			remaining ~= timer;
 
-	if (bgThreadTid.isNull)
-		throw new Exception("Tried to dequeue timer from loop when it was not running");
-
-	send(bgThreadTid.get(), RemoveTimerMessage(id));
+	pendingTimers = remaining;
 }
