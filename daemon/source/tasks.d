@@ -148,105 +148,102 @@ struct Task
 	}
 }
 
-private
+private @safe
 {
-	@safe
+	ScheuleRule parseScheduleRule(string str)
 	{
-		ScheuleRule parseScheduleRule(string str)
+		final switch (str)
 		{
-			final switch (str)
-			{
-			case "drop":
-				return ScheuleRule.drop;
-			case "single":
-				return ScheuleRule.single;
-			case "always":
-				return ScheuleRule.always;
-			}
-		}
-
-		string emitScheduleRule(ScheuleRule s)
-		{
-			final switch (s)
-			{
-			case ScheuleRule.drop:
-				return "drop";
-			case ScheuleRule.single:
-				return "single";
-			case ScheuleRule.always:
-				return "always";
-			}
-		}
-
-		int intervalToMultiplier(string interval)
-		{
-			final switch (interval)
-			{
-			case "seconds":
-				return 1000;
-			case "minutes":
-				return 1000 * 60;
-			case "hours":
-				return 1000 * 60 * 60;
-			case "days":
-				return 1000 * 60 * 60 * 24;
-			case "weeks":
-				return 1000 * 60 * 60 * 24 * 7;
-
-			case "months":
-				return 1;
-			case "years":
-				return 12;
-			}
-		}
-
-		Duration resolveIntervalMs(string interval)
-		{
-			import std.array : split;
-
-			auto splits = interval.split(" ");
-
-			auto ms = 0;
-
-			for (auto i = 0; i + 1 < splits.length; i += 2)
-			{
-				import std.conv : to;
-
-				auto amount = to!double(splits[i]);
-				auto multiplier = intervalToMultiplier(splits[i + 1]);
-
-				ms += to!int(amount * multiplier);
-			}
-
-			return dur!"msecs"(ms);
-		}
-
-		uint resolveIntervalMonths(string interval)
-		{
-			import std.array : split;
-
-			auto splits = interval.split(" ");
-
-			auto months = 0;
-
-			for (auto i = 0; i + 1 < splits.length; i += 2)
-			{
-				import std.conv : to;
-
-				auto amount = to!uint(splits[i]);
-				auto multiplier = intervalToMultiplier(splits[i + 1]);
-
-				months += amount * multiplier;
-			}
-
-			return months;
+		case "drop":
+			return ScheuleRule.drop;
+		case "single":
+			return ScheuleRule.single;
+		case "always":
+			return ScheuleRule.always;
 		}
 	}
 
-	Task[string] currentTasks;
+	string emitScheduleRule(ScheuleRule s)
+	{
+		final switch (s)
+		{
+		case ScheuleRule.drop:
+			return "drop";
+		case ScheuleRule.single:
+			return "single";
+		case ScheuleRule.always:
+			return "always";
+		}
+	}
 
-	InternalV1 internalData;
+	int intervalToMultiplier(string interval)
+	{
+		final switch (interval)
+		{
+		case "seconds":
+			return 1000;
+		case "minutes":
+			return 1000 * 60;
+		case "hours":
+			return 1000 * 60 * 60;
+		case "days":
+			return 1000 * 60 * 60 * 24;
+		case "weeks":
+			return 1000 * 60 * 60 * 24 * 7;
+
+		case "months":
+			return 1;
+		case "years":
+			return 12;
+		}
+	}
+
+	Duration resolveIntervalMs(string interval)
+	{
+		import std.array : split;
+
+		auto splits = interval.split(" ");
+
+		auto ms = 0;
+
+		for (auto i = 0; i + 1 < splits.length; i += 2)
+		{
+			import std.conv : to;
+
+			auto amount = to!double(splits[i]);
+			auto multiplier = intervalToMultiplier(splits[i + 1]);
+
+			ms += to!int(amount * multiplier);
+		}
+
+		return dur!"msecs"(ms);
+	}
+
+	uint resolveIntervalMonths(string interval)
+	{
+		import std.array : split;
+
+		auto splits = interval.split(" ");
+
+		auto months = 0;
+
+		for (auto i = 0; i + 1 < splits.length; i += 2)
+		{
+			import std.conv : to;
+
+			auto amount = to!uint(splits[i]);
+			auto multiplier = intervalToMultiplier(splits[i + 1]);
+
+			months += amount * multiplier;
+		}
+
+		return months;
+	}
 }
+
+Task[string] currentTasks;
+
+InternalV1 internalData;
 
 void loadInternals()
 {
