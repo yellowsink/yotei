@@ -26,7 +26,7 @@ void dirtyMain()
 	import core.stdc.stdlib : exit;
 	import signal : setupSignals;
 	import eventloop : beginLoop, waitForLoopClose;
-	import tasks : loadTasks;
+	import tasks : loadTasks, saveTasks;
 	import config : init, rootDir, pathPid, expectRoot, getuid;
 
 	chdir(rootDir);
@@ -51,6 +51,7 @@ void dirtyMain()
 	setupSignals();
 
 	loadTasks();
+	saveTasks();
 
 	// start and supervise the event loop
 	beginLoop();

@@ -30,23 +30,10 @@ Keywords are years, months, weeks, days, hours, minutes, seconds.
 
 You can chain more than one of these, and they sum.
 
-There is a minimum of 3 seconds on intervals for performance reasons.
+You may not use years & months with weeks/days/hours/minutes/seconds.
 
-<details>
-<summary>But why??</summary>
-<p>
-  Yotei runs an event loop in the background to handle many, many things.
-  This includes running scheduled tasks.
-</p>
-<p>
-  This event loop spends the vast majority of its time sleeping,
-  and this places a limit on the frequency of tasks.
-</p>
-<p>
-  Running this loop more often means more time spent using the CPU
-  just to idle, and this is not in the spirit of Yotei.
-</p>
-</details>
+This is because using years / months requires awareness of the calendar,
+and mixing both is technically difficult.
 
 ### `once` and `every`
 **Only one** of these two can be supplied at once, else the tasks file is invalid.

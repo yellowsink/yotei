@@ -20,7 +20,8 @@ struct Task
 	string as;
 	ScheuleRule scheduleRule;
 	Nullable!string condition;
-	Nullable!Duration every;
+	Nullable!Duration everyMs;
+	Nullable!uint everyMonths;
 	Nullable!Date once;
 	Nullable!Duration at;
 
@@ -48,7 +49,29 @@ struct Task
 			throw new Exception("Supply only one of `once` or `every` to each task");
 
 		if ("every" in node)
-			every = resolveInterval(node["every"].as!string);
+		{
+			import std.algorithm.searching : canFind;
+
+			auto ev = node["every"].as!string;
+
+			if (ev.canFind("months") || ev.canFind("years"))
+			{
+				if (ev.canFind("weeks")
+					|| ev.canFind("days")
+					|| ev.canFind("hours")
+					|| ev.canFind("minutes")
+					|| ev.canFind("seconds"))
+					throw new Exception("Cannot mix months with seconds in `every` - see docs for details");
+
+				everyMs.nullify();
+				everyMonths = resolveIntervalMonths(ev);
+			}
+			else
+			{
+				everyMonths.nullify();
+				everyMs = resolveIntervalMs(ev);
+			}
+		}
 		else
 			once = node["once"].as!SysTime
 				.to!Date;
@@ -74,15 +97,24 @@ struct Task
 		else if ("condition" in node)
 			node.removeAt("condition");
 
-		if (!every.isNull)
+		if (!everyMs.isNull)
 		{
-			if (yamlRepresentation.isNull
-				|| !("every" in yamlRepresentation.get)
-				|| resolveInterval(yamlRepresentation.get["every"].as!string) != every
+			if (!everyMonths.isNull)
+				throw new Exception("Cannot emit a task that mixes months and ms in `every`");
+
+			if (!("every" in node)
+				|| resolveIntervalMs(node["every"].as!string) != everyMs
 				)
-				node["every"] = every.get
-					.total!"seconds"
-					.to!string ~ " seconds";
+				node["every"] = (everyMs.get.total!"msecs" / 1000.0).to!string ~ " seconds";
+
+			if ("once" in node)
+				node.removeAt("once");
+		}
+		else if (!everyMonths.isNull)
+		{
+
+			if (!("every" in node) || resolveIntervalMonths(node["every"].as!string) != everyMonths)
+				node["every"] = everyMonths.to!string ~ " months";
 
 			if ("once" in node)
 				node.removeAt("once");
@@ -160,17 +192,15 @@ private
 				return 1000 * 60 * 60 * 24;
 			case "weeks":
 				return 1000 * 60 * 60 * 24 * 7;
-				// ah huh. uh. 30? 31?
-				// TODO
+
 			case "months":
-				return 1000 * 60 * 60 * 30;
-				// leap years?
+				return 1;
 			case "years":
-				return 1000 * 60 * 60 * 365;
+				return 12;
 			}
 		}
 
-		Duration resolveInterval(string interval)
+		Duration resolveIntervalMs(string interval)
 		{
 			import std.array : split;
 
@@ -189,6 +219,27 @@ private
 			}
 
 			return dur!"msecs"(ms);
+		}
+
+		uint resolveIntervalMonths(string interval)
+		{
+			import std.array : split;
+
+			auto splits = interval.split(" ");
+
+			auto months = 0;
+
+			for (auto i = 0; i + 1 < splits.length; i += 2)
+			{
+				import std.conv : to;
+
+				auto amount = to!uint(splits[i]);
+				auto multiplier = intervalToMultiplier(splits[i + 1]);
+
+				months += amount * multiplier;
+			}
+
+			return months;
 		}
 	}
 
@@ -221,12 +272,6 @@ void saveInternals()
 	import std.file : write;
 	import config : pathInternal;
 
-	// TODO: debug
-	import std.stdio : writeln;
-
-	writeln(internalData);
-	writeln(internalData.serIternal());
-
 	write(pathInternal, internalData.serIternal());
 }
 
@@ -240,21 +285,10 @@ void loadTasks(bool andInternals = true)
 
 	if (exists(pathTasks))
 	{
+		auto root = Loader.fromFile(pathTasks).load();
 
-		try
-		{
-			auto root = Loader.fromFile(pathTasks).load();
-
-			foreach (Task task; root)
-				currentTasks[task.id] = task;
-		}
-		catch (YAMLException y)
-		{
-			import std.stdio : writeln;
-
-			writeln("Loading tasks file as yaml threw");
-			return;
-		}
+		foreach (Task task; root)
+			currentTasks[task.id] = task;
 	}
 
 	if (andInternals)
@@ -264,19 +298,19 @@ void loadTasks(bool andInternals = true)
 void saveTasks(bool andInternals = true)
 {
 	import std.file : exists, write;
-	import std.array : Appender;
+	import std.array : Appender, appender;
 	import dyaml : dumper, Node;
 	import config : pathTasks;
 
-	Node[] taskList = [];
+	auto taskList = Node(cast(Node[])[]);
 	foreach (task; currentTasks.byValue)
-		taskList ~= task.toYaml;
+		taskList.add(task.toYaml);
 
-	Appender!string output;
+	auto buf = appender!string();
 
-	dumper().dump(output, taskList);
+	dumper().dump(buf, taskList);
 
-	write(pathTasks, output[]);
+	write(pathTasks, buf[]);
 
 	if (andInternals)
 		saveInternals();
