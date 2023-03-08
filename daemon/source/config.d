@@ -1,12 +1,12 @@
 module config;
 
+import user : lookupCurrentUser;
+
 string pathTasks;
 string pathInternal;
 string pathPid;
 string rootDir;
 bool expectRoot;
-
-extern (C) uint getuid();
 
 void init(bool user = false)
 {
@@ -16,23 +16,15 @@ void init(bool user = false)
 
 	if (user)
 	{
-		import std.process : environment;
-		auto homeDir = environment.get("HOME");
-		if (homeDir is null)
-		{
-			import std.stdio : stderr;
-			import core.stdc.stdlib : exit;
+		auto currentUser = lookupCurrentUser();
 
-			stderr.writeln("Yotei was passed the --user flag, however cannot setup in user mode due to missing $HOME env var");
-			exit(4);
-		}
-
-		rootDir = homeDir;
-		pathTasks = homeDir ~ "/.config/yotei/tasks";
-		pathInternal = homeDir ~ "/.config/yotei/internal";
-		pathPid = "/var/run/user/" ~ getuid().to!string ~ "/yotei.pid";
+		rootDir = currentUser.homedir;
+		pathTasks = currentUser.homedir ~ "/.config/yotei/tasks";
+		pathInternal = currentUser.homedir ~ "/.config/yotei/internal";
+		pathPid = "/var/run/user/" ~ currentUser.uid.to!string ~ "/yotei.pid";
 	}
-	else {
+	else
+	{
 		rootDir = "/";
 		pathTasks = "/etc/yotei/tasks";
 		pathInternal = "/etc/yotei/internal";

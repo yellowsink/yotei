@@ -27,7 +27,8 @@ void dirtyMain()
 	import signal : setupSignals;
 	import eventloop : beginLoop, waitForLoopClose;
 	import tasks : loadTasks, saveTasks;
-	import config : init, rootDir, pathPid, expectRoot, getuid;
+	import config : init, rootDir, pathPid, expectRoot;
+	import user : getuid;
 
 	chdir(rootDir);
 

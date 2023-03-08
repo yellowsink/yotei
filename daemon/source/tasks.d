@@ -17,7 +17,7 @@ struct Task
 
 	string id;
 	string run;
-	string as;
+	Nullable!string as;
 	ScheuleRule scheduleRule;
 	Nullable!string condition;
 	Nullable!Duration everyMs;
@@ -31,11 +31,18 @@ struct Task
 	// yaml
 	this(const Node node, string tag) @safe
 	{
+		import config : expectRoot;
+
 		yamlRepresentation = node;
 
 		id = node["id"].as!string;
 		run = node["run"].as!string;
-		as = node["as"].as!string;
+
+		if ((cast(bool) ("as" in node)) != expectRoot)
+			throw new Exception("`as` may not be specified in user mode, but must be specified in root mode.");
+
+		if ("as" in node)
+			as = node["as"].as!string;
 
 		if ("scheduleRule" in node)
 			scheduleRule = parseScheduleRule(node["scheduleRule"].as!string);
@@ -86,7 +93,11 @@ struct Task
 
 		node["id"] = id;
 		node["run"] = run;
-		node["as"] = as;
+
+		if (!as.isNull)
+			node["as"] = as.get;
+		else if ("as" in node)
+			node.removeAt("as");
 
 		// schedule rule might have been left as default!
 		if (!("scheduleRule" in node) || scheduleRule != ScheuleRule.single)

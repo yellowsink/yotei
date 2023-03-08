@@ -1,22 +1,71 @@
 module process;
 
-bool checkCondition(string condition, string as)
+import std.typecons : Nullable;
+
+private T setupEnvironment(T)(Nullable!string user, T delegate() cb)
 {
-	import std.process : execute;
+	import config : expectRoot;
+	import user : getuid, getgid, setuid, setgid, lookupUserName;
+	import std.process : environment;
+	import std.conv : to;
 
-	// this will not cause any problems I am sure
-	// file CVEs to trolleyzoom@yellows.ink
-	auto res = execute(["su", as, "-c", condition]);
+	if (!expectRoot) return cb();
+	if (user.isNull)
+		throw new Exception("Cannot run a process from root with a null target user.");
 
-	return res.status == 0;
+	// backup old env
+	auto uidbefore = getuid();
+	auto gidbefore = getgid();
+	auto oldhomeenv = environment.get("HOME");
+	auto olduserenv = environment.get("USER");
+	auto olduidenv = environment.get("UID");
+	auto oldgidenv = environment.get("GID");
+	auto oldlognameenv = environment.get("LOGNAME");
+	//auto oldmailenv = environment.get("MAIL");
+
+	// setup new env
+	auto lookedUp = lookupUserName(user.get);
+	setuid(lookedUp.uid);
+	setgid(lookedUp.gid);
+	environment["HOME"] = lookedUp.homedir;
+	environment["USER"] = lookedUp.uname;
+	environment["UID"] = lookedUp.uid.to!string;
+	environment["GID"] = lookedUp.gid.to!string;
+	environment["LOGNAME"] = lookedUp.uname;
+	//environment["MAIL"] = "/var/spool/main/" ~ lookedUp.uname;
+
+	try
+	{
+		auto res = cb();
+		return res;
+	}
+	finally
+	{
+		// cleanup user env
+		setuid(uidbefore);
+		setgid(gidbefore);
+		environment["HOME"] = oldhomeenv;
+		environment["USER"] = olduserenv;
+		environment["UID"] = olduidenv;
+		environment["GID"] = oldgidenv;
+		environment["LOGNAME"] = oldlognameenv;
+	}
 }
 
-void runTask(string task, string as)
+bool runCommand(string command, Nullable!string as)
 {
-	// goofy
-	auto _ = checkCondition(task, as);
+	return setupEnvironment(as, {
+		import std.process : execute;
+
+		auto res = execute(["bash", "-c", command]);
+		return res.status == 0;
+	});
 }
 
-// TODO: oh god the actual runner needs to be quite robust, huh?
-// TODO: hmmm tie it all together with tasks n stuff too
-// TODO: socket :D
+void runTask(string task, Nullable!string as)
+{
+	auto _ = runCommand(task, as);
+}
+
+// TODO: logging
+// TODO: open processes in parallel / on another thread / async?

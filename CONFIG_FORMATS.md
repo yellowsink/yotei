@@ -21,7 +21,7 @@ task:
    Cannot be more than the interval size if using `every`,
    or one day if using `once`
  - scheduleRule (srule)?: How to handle a task that was due to run but wasnt.
- - as (string): the user to run the script as.
+ - as (string)?: the user to run the script as.
 
 ### Intervals (`every`)
 
@@ -67,6 +67,14 @@ task a *LOT*.
 Maybe only use this one on high uptime e.g. server environments.
 
 Always cannot be used with `once`. Doing this will make the config invalid.
+
+### `as`
+
+The `as` key defines the username of who the task should be ran as.
+
+If Yotei is running as root, this field MUST be provided.
+
+If Yotei is running as a user (`--user`), this field MUST NOT be provided.
 
 ## `/etc/yotei/internal`
 
