@@ -265,7 +265,7 @@ void loadInternals()
 	{
 		// assume yotei has never ran before if this is nulled out
 		if (internalData.magic == [0, 0, 0, 0])
-			internalData = InternalV1(0);
+			internalData = InternalV1(new SysTime[string]);
 
 		return;
 	}

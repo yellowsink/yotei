@@ -85,4 +85,8 @@ This is the file Yotei uses to store internal state in.
 It is a raw binary file with a structure defined in the comments in `internalcoding.d`
 [here](https://github.com/yellowsink/yotei/blob/master/daemon/source/internalcoding.d#L5-L8).
 
+This binary format is expected to be consistent *between point releases* - that is,
+released versions of Yotei won't break when encountering a file written *by an older version of*
+Yotei.
+
 If you mess with this EXPECT Yotei to break.
