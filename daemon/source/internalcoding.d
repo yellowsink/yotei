@@ -16,89 +16,96 @@ import std.traits : isNumeric;
 
 private immutable ubyte[] MAGIC = [0x79, 0x6F, 0x74, 0x69];
 
-private ubyte[T.sizeof] byteify(T)(T value) if (isNumeric!T)
+@safe
 {
-	// if this or debyteify(T)(T) are a genuine security concern
-	// please god someone tell me
-	// but im like 98% sure these are fine
-  return *cast(ubyte[T.sizeof]*)&value;
-}
+	private
+	{
+		ubyte[T.sizeof] byteify(T)(T value) if (isNumeric!T)
+		{
+			import std.bitmanip : nativeToLittleEndian;
 
-private ubyte[] byteify(string value)
-{
-  import std.string : representation;
+			return nativeToLittleEndian(value);
+		}
 
-  auto repr = value.representation;
+		ubyte[] byteify(string value)
+		{
+			import std.string : representation;
 
-  return byteify(cast(ushort) repr.length) ~ repr;
-}
+			auto repr = value.representation;
 
-private T debyteify(T)(ubyte[] value) if (isNumeric!T)
-{
-  return *cast(T*) value[0 .. T.sizeof].ptr;
-}
+			return byteify(cast(ushort) repr.length) ~ repr;
+		}
 
-private string debyteify(ubyte[] value, out ushort length)
-{
-  import std.string : assumeUTF;
+		T debyteify(T)(ubyte[] value) if (isNumeric!T)
+		{
+			import std.bitmanip : littleEndianToNative;
 
-  length = value.debyteify!ushort;
+			return littleEndianToNative!T(value[0 .. T.sizeof]);
+		}
 
-  return value[ushort.sizeof .. ushort.sizeof + length].assumeUTF;
-}
+		string debyteify(ubyte[] value, out ushort length)
+		{
+			import std.string : assumeUTF;
 
-struct InternalV1
-{
-  ubyte[4] magic;
-  ubyte ver;
-  SysTime[string] lastRunTimes;
+			length = value.debyteify!ushort;
 
-  this(SysTime[string] lrts)
-  {
-    magic = MAGIC;
-    ver = 1;
-    lastRunTimes = lrts;
-  }
-}
+			return value[ushort.sizeof .. ushort.sizeof + length].assumeUTF;
+		}
+	}
 
-InternalV1 deserInternal(ubyte[] file)
-{
-  if (file.length < 7)
-    throw new Exception("the file is too short");
-  if (file[0 .. 4] != MAGIC)
-    throw new Exception("magic bytes were incorrect for this file");
-  if (file[4] != 1)
-    throw new Exception("invalid version number in file");
+	struct InternalV1
+	{
+		ubyte[4] magic;
+		ubyte ver;
+		SysTime[string] lastRunTimes;
 
-  auto taskCount = file[5 .. 7].debyteify!ushort;
+		this(SysTime[string] lrts)
+		{
+			magic = MAGIC;
+			ver = 1;
+			lastRunTimes = lrts;
+		}
+	}
 
-  SysTime[string] lrts;
+	InternalV1 deserInternal(ubyte[] file)
+	{
+		if (file.length < 7)
+			throw new Exception("the file is too short");
+		if (file[0 .. 4] != MAGIC)
+			throw new Exception("magic bytes were incorrect for this file");
+		if (file[4] != 1)
+			throw new Exception("invalid version number in file");
 
-	int bytePos = 7;
+		auto taskCount = file[5 .. 7].debyteify!ushort;
 
-  for (auto i = 0; i < taskCount; i++)
-  {
-		import std.datetime : SysTime;
+		SysTime[string] lrts;
 
-		ushort consumed;
-		auto taskId = file[bytePos .. $].debyteify(consumed);
-		auto lastRun = file[bytePos + consumed .. $].debyteify!ulong;
+		int bytePos = 7;
 
-		lrts[taskId] = SysTime.fromUnixTime(lastRun);
+		for (auto i = 0; i < taskCount; i++)
+		{
+			import std.datetime : SysTime;
 
-		bytePos += consumed + ulong.sizeof;
-  }
+			ushort consumed;
+			auto taskId = file[bytePos .. $].debyteify(consumed);
+			auto lastRun = file[bytePos + consumed .. $].debyteify!ulong;
 
-  return InternalV1(lrts);
-}
+			lrts[taskId] = SysTime.fromUnixTime(lastRun);
 
-ubyte[] serIternal(InternalV1 internal)
-{
-  ubyte[] tasks = [];
-  foreach (key, val; internal.lastRunTimes)
-    tasks ~= key.byteify ~ [cast(ubyte) 0] ~ val.toUnixTime.byteify;
+			bytePos += consumed + ulong.sizeof;
+		}
 
-  auto taskCount = cast(ushort) internal.lastRunTimes.length;
+		return InternalV1(lrts);
+	}
 
-  return internal.magic ~ [internal.ver] ~ taskCount.byteify ~ tasks;
+	ubyte[] serIternal(InternalV1 internal)
+	{
+		ubyte[] tasks = [];
+		foreach (key, val; internal.lastRunTimes)
+			tasks ~= key.byteify ~ [ubyte(0)] ~ val.toUnixTime.byteify;
+
+		auto taskCount = cast(ushort) internal.lastRunTimes.length;
+
+		return internal.magic ~ [internal.ver] ~ taskCount.byteify ~ tasks;
+	}
 }
