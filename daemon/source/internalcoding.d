@@ -98,7 +98,7 @@ ubyte[] serIternal(InternalV1 internal)
   foreach (key, val; internal.lastRunTimes)
     tasks ~= key.byteify ~ [cast(ubyte) 0] ~ val.toUnixTime.byteify;
 
-  auto taskCount = internal.lastRunTimes.length;
+  auto taskCount = cast(ushort) internal.lastRunTimes.length;
 
   return internal.magic ~ [internal.ver] ~ taskCount.byteify ~ tasks;
 }
