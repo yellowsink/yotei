@@ -1,23 +1,19 @@
 module eventloop;
-import std.typecons : Nullable;
-import core.thread.osthread : Thread;
-import std.datetime : SysTime, dur;
+import std.datetime : SysTime;
 
 private
 {
-	int lastId;
-
-	int genId()
+	void sleep(int ms)
 	{
-		return lastId++;
+		import core.thread.osthread : Thread;
+		import std.datetime : dur;
+
+		Thread.sleep(dur!"msecs"(ms));
 	}
 
-	struct RunCbMessage
-	{
-		void function() cb;
-	}
+	int lastTimerId;
 
-	struct QueueTimerMessage
+	struct Timer
 	{
 		void function() cb;
 		SysTime at;
@@ -40,23 +36,18 @@ private
 	int nogcCbCount;
 
 	bool cancelled = false;
-	QueueTimerMessage[] pendingTimers = [];
+	Timer[] pendingTimers = [];
 
 	void bgThread()
 	{
-		import std.concurrency : receiveTimeout, send, thisTid;
-		import core.time : dur;
-
 		while (!cancelled)
 		{
-			import std.stdio : writeln;
-			import std.conv : text;
-
 			if (nogcCbCount > 0)
 			{
 				for (auto i = 0; i < nogcCbCount;)
 				{
-					if (nogcCbs[i] == null) break;
+					if (nogcCbs[i] == null)
+						break;
 
 					nogcCbs[i]();
 					nogcCbs[i] = null;
@@ -67,7 +58,7 @@ private
 
 			if (pendingTimers.length > 0)
 			{
-				QueueTimerMessage[] notYet = [];
+				Timer[] notYet = [];
 
 				foreach (timer; pendingTimers)
 					if (timer.isReady)
@@ -78,7 +69,7 @@ private
 				pendingTimers = notYet;
 			}
 
-			Thread.sleep(dur!"msecs"(100));
+			sleep(100);
 		}
 
 		cancelled = false;
@@ -111,16 +102,16 @@ void __nogc__queueTask(void function() cb) @nogc nothrow
 
 int queueTimer(void function() cb, SysTime time)
 {
-	auto id = genId();
+	auto id = lastTimerId++;
 
-	pendingTimers ~= QueueTimerMessage(cb, time, id);
+	pendingTimers ~= Timer(cb, time, id);
 
 	return id;
 }
 
 void dequeueTimer(int id)
 {
-	QueueTimerMessage[] remaining = [];
+	Timer[] remaining = [];
 	foreach (timer; pendingTimers)
 		if (timer.id != id)
 			remaining ~= timer;
