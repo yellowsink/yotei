@@ -13,6 +13,15 @@
       "args": ["--user"],
 			"preLaunchTask": "Build yoteid",
 			"console": "internalConsole"
-    }
+    },
+		{
+			"type": "gdb",
+			"request": "launch",
+			"name": "yoteid root",
+			"cwd": "${workspaceFolder}",
+			"target": "${workspaceFolder}/daemon/yoteid",
+			"preLaunchTask": "Build yoteid",
+			"gdbpath": "/home/cain/rootgdb"
+		}
   ]
 }

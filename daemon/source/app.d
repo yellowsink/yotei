@@ -24,11 +24,11 @@ void dirtyMain()
 	import std.stdio : stderr;
 	import std.process : thisProcessID;
 	import core.stdc.stdlib : exit;
+	import core.sys.posix.unistd : getuid;
 	import signal : setupSignals;
 	import eventloop : runLoop;
 	import tasks : loadTasks, saveTasks;
 	import config : init, rootDir, pathPid, expectRoot;
-	import user : getuid;
 
 	chdir(rootDir);
 

@@ -2,10 +2,45 @@ module process;
 
 import std.typecons : Nullable;
 
+T forkAsUser(T)(uint uid, uint gid, T delegate() cb)
+{
+	import core.sys.posix.unistd : fork, setgid, setuid;
+	import core.sys.posix.sys.wait : waitpid;
+	import core.stdc.stdlib : exit;
+
+	static if (!is(T == void))
+		T result;
+
+	auto pid = fork();
+
+	if (pid == 0)
+	{
+		// child process
+		assert(setgid(gid) == 0);
+		assert(setuid(uid) == 0);
+
+		static if (is(T == void))
+			cb();
+		else
+			result = cb();
+
+		exit(0);
+	}
+	else
+	{
+		// yoteid parent process
+		waitpid(pid, null, 0);
+	}
+
+	static if (!is(T == void))
+		return result;
+}
+
 private T setupEnvironment(T)(Nullable!string user, T delegate() cb)
 {
 	import config : expectRoot;
-	import user : getuid, getgid, setuid, setgid, lookupUserName;
+	import core.sys.posix.unistd : getuid, getgid, setuid, setgid;
+	import user : lookupUserName;
 	import std.process : environment;
 	import std.conv : to;
 
@@ -13,7 +48,18 @@ private T setupEnvironment(T)(Nullable!string user, T delegate() cb)
 	if (user.isNull)
 		throw new Exception("Cannot run a process from root with a null target user.");
 
-	// backup old env
+	auto lookedUp = lookupUserName(user.get);
+
+	return forkAsUser(lookedUp.uid, lookedUp.gid, {
+		import core.thread : Thread;
+		import std.datetime : dur;
+		Thread.sleep(dur!"seconds"(15));
+
+		// TODO: don't wrap cb
+		return cb();
+	});
+
+	/* // backup old env
 	auto uidbefore = getuid();
 	auto gidbefore = getgid();
 	auto oldhomeenv = environment.get("HOME");
@@ -49,7 +95,7 @@ private T setupEnvironment(T)(Nullable!string user, T delegate() cb)
 		environment["UID"] = olduidenv;
 		environment["GID"] = oldgidenv;
 		environment["LOGNAME"] = oldlognameenv;
-	}
+	} */
 }
 
 bool runCommand(string command, Nullable!string as)

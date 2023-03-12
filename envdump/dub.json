@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"Cain Atkinson"
+	],
+	"copyright": "Copyright © 2023, Cain Atkinson",
+	"description": "Dumps the environment",
+	"license": "Unlicense",
+	"name": "envdump"
+}

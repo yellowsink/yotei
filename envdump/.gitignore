@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/envdump
+envdump.so
+envdump.dylib
+envdump.dll
+envdump.a
+envdump.lib
+envdump-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst

@@ -1,28 +1,7 @@
 module user;
 
-// binds to relevant C apis and provides useful functions for users
-
-extern (C)
-{
-	uint getuid();
-	int setuid(uint uid);
-	uint getgid();
-	int setgid(uint gid);
-
-	private struct CPasswd
-	{
-		char* pw_name;
-		char* pw_passwd;
-		uint pw_uid;
-		uint pw_gid;
-		char* pw_gecos;
-		char* pw_dir;
-		char* pw_shell;
-	}
-
-	private CPasswd* getpwnam(char* name);
-	private CPasswd* getpwuid(uint uid);
-}
+import core.sys.posix.pwd : getpwnam, getpwuid, passwd;
+import core.sys.posix.unistd : getuid;
 
 struct UserInfo
 {
@@ -32,7 +11,7 @@ struct UserInfo
 	string homedir;
 	string shellpath;
 
-	this(CPasswd* fromC)
+	this(passwd* fromC)
 	{
 		import std.conv : to;
 
@@ -46,8 +25,9 @@ struct UserInfo
 
 UserInfo lookupUserName(string username)
 {
-	auto chars = cast(char[]) username;
-	return UserInfo(getpwnam(chars.ptr));
+	import std.string : toStringz;
+	auto cstr = cast(char*) username.toStringz();
+	return UserInfo(getpwnam(cstr));
 }
 
 UserInfo lookupUserId(uint uid)
