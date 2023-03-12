@@ -38,8 +38,11 @@ private
 	bool cancelled = false;
 	Timer[] pendingTimers = [];
 
-	void bgThread()
+	void bgLoopFunc()
 	{
+		import tasks : currentTasks, internalData, saveInternals;
+		import std.datetime : Clock, UTC;
+
 		while (!cancelled)
 		{
 			if (nogcCbCount > 0)
@@ -69,6 +72,26 @@ private
 				pendingTimers = notYet;
 			}
 
+			auto updatedInternals = false;
+
+			foreach (task; currentTasks)
+			{
+
+				auto nextRun = task.getNextRun();
+				if (nextRun <= Clock.currTime(UTC()))
+				{
+					import process : runCommand;
+
+					updatedInternals = true;
+					if (task.condition.isNull || runCommand(task.condition.get, task.as))
+						runCommand(task.run, task.as);
+
+					internalData.lastRunTimes[task.id] = nextRun;
+				}
+			}
+
+			if (updatedInternals) saveInternals();
+
 			sleep(100);
 		}
 
@@ -80,7 +103,7 @@ private
 void runLoop()
 {
 	// lol infinite loops my beloved
-	bgThread();
+	bgLoopFunc();
 }
 
 void killLoop() @nogc nothrow

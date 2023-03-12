@@ -28,6 +28,30 @@ struct Task
 	// keep this as D:YAML will mimick the ingested code style on emit
 	private Nullable!Node yamlRepresentation;
 
+	SysTime getNextRun()
+	{
+		import std.datetime : Clock, UTC;
+
+		auto lastRun = Clock.currTime(UTC());
+
+		if (id in internalData.lastRunTimes)
+			lastRun = internalData.lastRunTimes[id];
+		else
+			return lastRun;
+
+		auto nextRun = lastRun;
+		if (!everyMonths.isNull)
+		{
+			nextRun.add!"months"(everyMonths.get);
+		}
+		else
+		{
+			nextRun += everyMs.get;
+		}
+
+		return nextRun;
+	}
+
 	// yaml
 	this(const Node node, string tag) @safe
 	{
