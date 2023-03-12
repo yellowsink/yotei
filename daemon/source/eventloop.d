@@ -1,8 +1,7 @@
 module eventloop;
 import std.typecons : Nullable;
-import std.concurrency : Tid;
-import core.thread : Fiber;
-import std.datetime : SysTime;
+import core.thread.osthread : Thread;
+import std.datetime : SysTime, dur;
 
 private
 {
@@ -40,7 +39,6 @@ private
 	void function()[nogcCbLimit] nogcCbs;
 	int nogcCbCount;
 
-	Nullable!Fiber fiber;
 	bool cancelled = false;
 	QueueTimerMessage[] pendingTimers = [];
 
@@ -80,7 +78,7 @@ private
 				pendingTimers = notYet;
 			}
 
-			Fiber.yield();
+			Thread.sleep(dur!"msecs"(100));
 		}
 
 		cancelled = false;
@@ -88,31 +86,15 @@ private
 	}
 }
 
-void beginLoop()
+void runLoop()
 {
-	if (fiber.isNull) {
-		fiber = new Fiber(&bgThread);
-		fiber.get.call();
-	}
+	// lol infinite loops my beloved
+	bgThread();
 }
 
 void killLoop() @nogc nothrow
 {
-	if (!fiber.isNull) cancelled = true;
-}
-
-void waitForLoopClose()
-{
-	if (fiber.isNull) return;
-
-	auto f = fiber.get();
-	while (f.state() != Fiber.State.TERM) {
-		f.call();
-
-		import core.thread.osthread : Thread;
-		import std.datetime : dur;
-		Thread.sleep(dur!"msecs"(100));
-	}
+	cancelled = true;
 }
 
 /// This only exists for C interop, please dont use.

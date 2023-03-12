@@ -25,7 +25,7 @@ void dirtyMain()
 	import std.process : thisProcessID;
 	import core.stdc.stdlib : exit;
 	import signal : setupSignals;
-	import eventloop : beginLoop, waitForLoopClose;
+	import eventloop : runLoop;
 	import tasks : loadTasks, saveTasks;
 	import config : init, rootDir, pathPid, expectRoot;
 	import user : getuid;
@@ -55,8 +55,7 @@ void dirtyMain()
 	saveTasks();
 
 	// start and supervise the event loop
-	beginLoop();
-	waitForLoopClose();
+	runLoop();
 }
 
 bool hasFlag(string flag)(string[] argv)
