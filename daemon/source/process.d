@@ -2,14 +2,26 @@ module process;
 
 import std.typecons : Nullable;
 
-T forkAsUser(T)(uint uid, uint gid, T delegate() cb)
+private T* createSharedMemory(T)()
+{
+	import core.sys.posix.sys.mman : mmap, PROT_READ, PROT_WRITE, MAP_SHARED, MAP_ANON;
+
+	// https://stackoverflow.com/a/5656561/8388655
+	return cast(T*) mmap(null, T.sizeof, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
+}
+
+private T forkAsUser(T)(uint uid, uint gid, T delegate() cb)
 {
 	import core.sys.posix.unistd : fork, setgid, setuid;
 	import core.sys.posix.sys.wait : waitpid;
 	import core.stdc.stdlib : exit;
+	import core.sys.posix.sys.mman : munmap;
 
 	static if (!is(T == void))
-		T result;
+	{
+		T* result = createSharedMemory!T();
+		*result = T.init;
+	}
 
 	auto pid = fork();
 
@@ -22,7 +34,7 @@ T forkAsUser(T)(uint uid, uint gid, T delegate() cb)
 		static if (is(T == void))
 			cb();
 		else
-			result = cb();
+			*result = cb();
 
 		exit(0);
 	}
@@ -33,7 +45,11 @@ T forkAsUser(T)(uint uid, uint gid, T delegate() cb)
 	}
 
 	static if (!is(T == void))
-		return result;
+	{
+		auto res = *result;
+		munmap(result, T.sizeof);
+		return res;
+	}
 }
 
 private T setupEnvironment(T)(Nullable!string user, T delegate() cb)
@@ -44,20 +60,14 @@ private T setupEnvironment(T)(Nullable!string user, T delegate() cb)
 	import std.process : environment;
 	import std.conv : to;
 
-	if (!expectRoot) return cb();
+	if (!expectRoot)
+		return cb();
 	if (user.isNull)
 		throw new Exception("Cannot run a process from root with a null target user.");
 
 	auto lookedUp = lookupUserName(user.get);
 
-	return forkAsUser(lookedUp.uid, lookedUp.gid, {
-		import core.thread : Thread;
-		import std.datetime : dur;
-		Thread.sleep(dur!"seconds"(15));
-
-		// TODO: don't wrap cb
-		return cb();
-	});
+	return forkAsUser(lookedUp.uid, lookedUp.gid, cb);
 
 	/* // backup old env
 	auto uidbefore = getuid();
