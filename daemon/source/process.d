@@ -66,6 +66,8 @@ private T setupEnvironment(T)(Nullable!string user, T delegate() cb)
 
 	auto lookedUp = lookupUserName(user.get);
 
+  if (lookedUp.uid == 0) return cb();
+
 	return forkAsUser(lookedUp.uid, lookedUp.gid, {
 		import std.process : environment;
 
