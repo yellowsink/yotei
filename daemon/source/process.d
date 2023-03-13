@@ -55,7 +55,6 @@ private T forkAsUser(T)(uint uid, uint gid, T delegate() cb)
 private T setupEnvironment(T)(Nullable!string user, T delegate() cb)
 {
 	import config : expectRoot;
-	import core.sys.posix.unistd : getuid, getgid, setuid, setgid;
 	import user : lookupUserName;
 	import std.process : environment;
 	import std.conv : to;
@@ -67,45 +66,17 @@ private T setupEnvironment(T)(Nullable!string user, T delegate() cb)
 
 	auto lookedUp = lookupUserName(user.get);
 
-	return forkAsUser(lookedUp.uid, lookedUp.gid, cb);
+	return forkAsUser(lookedUp.uid, lookedUp.gid, {
+		import std.process : environment;
 
-	/* // backup old env
-	auto uidbefore = getuid();
-	auto gidbefore = getgid();
-	auto oldhomeenv = environment.get("HOME");
-	auto olduserenv = environment.get("USER");
-	auto olduidenv = environment.get("UID");
-	auto oldgidenv = environment.get("GID");
-	auto oldlognameenv = environment.get("LOGNAME");
-	//auto oldmailenv = environment.get("MAIL");
+		environment["HOME"] = lookedUp.homedir;
+		environment["USER"] = lookedUp.uname;
+		environment["UID"] = lookedUp.uid.to!string;
+		environment["GID"] = lookedUp.gid.to!string;
+		environment["LOGNAME"] = lookedUp.uname;
 
-	// setup new env
-	auto lookedUp = lookupUserName(user.get);
-	setuid(lookedUp.uid);
-	setgid(lookedUp.gid);
-	environment["HOME"] = lookedUp.homedir;
-	environment["USER"] = lookedUp.uname;
-	environment["UID"] = lookedUp.uid.to!string;
-	environment["GID"] = lookedUp.gid.to!string;
-	environment["LOGNAME"] = lookedUp.uname;
-	//environment["MAIL"] = "/var/spool/main/" ~ lookedUp.uname;
-
-	try
-	{
-		auto res = cb();
-		return res;
-	}
-	finally
-	{
-		// cleanup user env
-		setuid(uidbefore);
-		setgid(gidbefore);
-		environment["HOME"] = oldhomeenv;
-		environment["USER"] = olduserenv;
-		environment["UID"] = olduidenv;
-		environment["GID"] = oldgidenv;
-		environment["LOGNAME"] = oldlognameenv;
-	} */
+		return cb();
+	});
 }
 
 bool runCommand(string command, Nullable!string as)
