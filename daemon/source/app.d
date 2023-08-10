@@ -1,25 +1,6 @@
 void main(string[] argv)
 {
-	import config : init, pathPid;
-	import std.file : remove, exists;
-
-	init(hasFlag!"user"(argv));
-
-	try {
-		dirtyMain();
-	}
-	finally {
-		if (exists(pathPid))
-			remove(pathPid);
-
-		// TODO: kill all dangling processes
-	}
-}
-
-// dirty - can throw exceptions and require cleanup (pid file)
-void dirtyMain()
-{
-	import std.file : exists, write, chdir;
+	import std.file : remove, exists, write, chdir;
 	import std.conv : text;
 	import std.stdio : stderr;
 	import std.process : thisProcessID;
@@ -30,6 +11,8 @@ void dirtyMain()
 	import tasks : loadTasks, saveTasks;
 	import config : init, rootDir, pathPid, expectRoot;
 
+	init(argv.hasFlag!"user");
+
 	chdir(rootDir);
 
 	if (exists(pathPid))
@@ -39,6 +22,12 @@ void dirtyMain()
 (if you are SURE that the Yotei daemon is not running (try pgrep yoteid), then delete ", pathPid);
 
 		return exit(1);
+	}
+
+	scope(exit)
+	{
+		if (exists(pathPid)) remove(pathPid);
+		// TODO: kill all dangling processes
 	}
 
 	if (getuid() != 0 && expectRoot)
